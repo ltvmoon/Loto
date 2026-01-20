@@ -5,11 +5,11 @@ use axum::{
     http::StatusCode,
 };
 use std::sync::Arc;
-// THÊM: import params từ rusqlite
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection}; // Bắt buộc có params
 use bcrypt::{hash, verify, DEFAULT_COST};
 use crate::ws::handle_socket;
-use crate::model::{AppState, LoginRequest, CreateUserRequest, UpdateUserRequest, Ticket, RoomSummary, UserData};
+// Nhớ thêm DeleteUserRequest vào đây (và phải khai báo trong model.rs)
+use crate::model::{AppState, LoginRequest, CreateUserRequest, UpdateUserRequest, DeleteUserRequest, Ticket, RoomSummary, UserData};
 
 pub async fn login_handler(
     State(state): State<Arc<AppState>>,
@@ -19,7 +19,7 @@ pub async fn login_handler(
 
     let result = conn.query_row(
         "SELECT password_hash, role, balance FROM users WHERE username = ?1",
-        [&payload.username],
+        params![payload.username],
         |row| {
             let hash: String = row.get(0)?;
             let role: String = row.get(1)?;
@@ -55,7 +55,7 @@ pub async fn create_user_handler(
 
     let creator_role: String = conn.query_row(
         "SELECT role FROM users WHERE username = ?1",
-        [&payload.creator],
+        params![payload.creator],
         |row| row.get(0)
     ).unwrap_or("user".to_string());
 
@@ -63,15 +63,13 @@ pub async fn create_user_handler(
         return (StatusCode::FORBIDDEN, Json(serde_json::json!({ "status": "error", "message": "Bạn không có quyền Admin!" }))).into_response();
     }
 
-    let hashed_pw = hash(&payload.password, DEFAULT_COST).unwrap();
-
-    // MỚI: Lấy balance từ payload, mặc định là 0
+    // Tối ưu tốc độ: Dùng cost 4 thay vì DEFAULT_COST
+    let hashed_pw = hash(&payload.password, 4).unwrap();
     let start_balance = payload.balance.unwrap_or(0);
 
-    // MỚI: Cập nhật câu SQL Insert
     let result = conn.execute(
         "INSERT INTO users (username, password_hash, role, balance) VALUES (?1, ?2, ?3, ?4)",
-        params![&payload.username, &hashed_pw, &payload.role, start_balance], // Dùng params! để truyền đúng kiểu số
+        params![payload.username, hashed_pw, payload.role, start_balance],
     );
 
     match result {
@@ -80,17 +78,15 @@ pub async fn create_user_handler(
     }
 }
 
-// --- CẬP NHẬT HÀM NÀY ---
 pub async fn update_user_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<UpdateUserRequest>
 ) -> Response {
     let conn = Connection::open(&state.db_path).unwrap();
 
-    // 1. Check quyền Admin
     let admin_role: String = conn.query_row(
         "SELECT role FROM users WHERE username = ?1",
-        [&payload.admin_username],
+        params![payload.admin_username],
         |row| row.get(0)
     ).unwrap_or("user".to_string());
 
@@ -98,33 +94,70 @@ pub async fn update_user_handler(
         return (StatusCode::FORBIDDEN, Json(serde_json::json!({ "status": "error", "message": "Không có quyền Admin!" }))).into_response();
     }
 
-    println!("🛠️ Admin {} đang sửa user {}", payload.admin_username, payload.target_username);
+    println!("🛠️ Admin {} sửa user {}", payload.admin_username, payload.target_username);
 
-    // 2. Update Password (nếu có)
     if let Some(new_pass) = &payload.new_password {
         if !new_pass.is_empty() {
-            let hashed = hash(new_pass, DEFAULT_COST).unwrap();
-            let res = conn.execute(
+            // Dùng cost 4 cho nhanh
+            let hashed = hash(new_pass, 4).unwrap();
+            let _ = conn.execute(
                 "UPDATE users SET password_hash = ?1 WHERE username = ?2",
                 params![hashed, payload.target_username],
             );
-            println!("   -> Update Pass: {:?}", res);
         }
     }
 
-    // 3. Update Balance (nếu có)
     if let Some(new_bal) = payload.new_balance {
-        let res = conn.execute(
+        let _ = conn.execute(
             "UPDATE users SET balance = ?1 WHERE username = ?2",
-            params![new_bal, payload.target_username], // Dùng params! chuẩn hơn
+            params![new_bal, payload.target_username],
         );
-        match res {
-            Ok(count) => println!("   -> Update Balance ({}): {} dòng bị ảnh hưởng", new_bal, count),
-            Err(e) => println!("   -> Update Balance LỖI: {:?}", e),
-        }
     }
 
     Json(serde_json::json!({ "status": "ok", "message": "Cập nhật thành công!" })).into_response()
+}
+
+// MỚI: API XÓA USER
+pub async fn delete_user_handler(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<DeleteUserRequest>
+) -> Response {
+    let conn = Connection::open(&state.db_path).unwrap();
+
+    let admin_role: String = conn.query_row(
+        "SELECT role FROM users WHERE username = ?1",
+        params![payload.admin_username],
+        |row| row.get(0)
+    ).unwrap_or("user".to_string());
+
+    if admin_role != "admin" {
+        return (StatusCode::FORBIDDEN, Json(serde_json::json!({ "status": "error", "message": "Không có quyền Admin!" }))).into_response();
+    }
+
+    // Chặn tự sát
+    if payload.target_username == payload.admin_username {
+        return (StatusCode::BAD_REQUEST, Json(serde_json::json!({ "status": "error", "message": "Không thể tự xóa chính mình!" }))).into_response();
+    }
+
+    let result = conn.execute(
+        "DELETE FROM users WHERE username = ?1",
+        params![payload.target_username],
+    );
+
+    match result {
+        Ok(count) => {
+            if count > 0 {
+                println!("🗑️ Admin {} đã xóa user {}", payload.admin_username, payload.target_username);
+                Json(serde_json::json!({ "status": "ok", "message": "Đã xóa thành công!" })).into_response()
+            } else {
+                (StatusCode::NOT_FOUND, Json(serde_json::json!({ "status": "error", "message": "User không tồn tại!" }))).into_response()
+            }
+        },
+        Err(e) => {
+            println!("❌ Lỗi Delete: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({ "status": "error", "message": "Lỗi Database" }))).into_response()
+        }
+    }
 }
 
 pub async fn get_all_users_handler(

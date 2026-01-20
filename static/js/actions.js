@@ -2,8 +2,7 @@ import { state } from './state.js';
 import { connectWS } from './ws.js';
 import * as UI from './ui.js';
 
-// --- 1. QUẢN LÝ SESSION & NAVIGATION ---
-
+// --- 1. SESSION & NAV ---
 export function checkSession() {
     const storedUser = localStorage.getItem('loto_user');
     const storedRole = localStorage.getItem('loto_role');
@@ -11,7 +10,6 @@ export function checkSession() {
     if (storedUser && storedRole) {
         state.currentUser = storedUser;
         state.userRole = storedRole;
-
         if (state.userRole === 'admin') {
             navToAdminDashboard();
             const welcome = document.getElementById('welcome-admin');
@@ -39,29 +37,18 @@ function showScreen(screenId) {
     if(target) target.classList.remove('hidden');
 }
 
-// Các hàm điều hướng
 export function navToAdminDashboard() { showScreen('admin-dashboard'); }
-
-export function navToUserManager() {
-    showScreen('admin-user-manager');
-    loadUserList();
-}
-
+export function navToUserManager() { showScreen('admin-user-manager'); loadUserList(); }
 export function navToLobby() {
     showScreen('lobby-screen');
-    const lobbyUser = document.getElementById('lobby-username');
-    if(lobbyUser) lobbyUser.innerText = state.currentUser;
+    const el = document.getElementById('lobby-username');
+    if(el) el.innerText = state.currentUser;
     refreshRoomList();
 }
-
 export function handleLobbyBack() {
-    if (state.userRole === 'admin') {
-        navToAdminDashboard();
-    } else {
-        logout();
-    }
+    if (state.userRole === 'admin') navToAdminDashboard();
+    else logout();
 }
-
 export function leaveRoom() {
     if (state.ws) state.ws.close();
     UI.softResetGame();
@@ -69,25 +56,12 @@ export function leaveRoom() {
 }
 
 // --- 2. LOGIN ---
-
 export async function login(userArg, passArg, roomArg) {
-    let username = (typeof userArg === 'string') ? userArg : "";
-    let password = (typeof passArg === 'string') ? passArg : "";
-
-    if (!username) {
-        const el = document.getElementById('username');
-        if (el) username = el.value.trim();
-    }
-    if (!password) {
-        const el = document.getElementById('password');
-        if (el) password = el.value.trim();
-    }
-
+    let username = (typeof userArg === 'string') ? userArg : document.getElementById('username').value.trim();
+    let password = (typeof passArg === 'string') ? passArg : document.getElementById('password').value.trim();
     const roomId = (typeof roomArg === 'string') ? roomArg : "101";
 
     if (!username || !password) return alert("Vui lòng nhập Tên và Mật khẩu!");
-
-    console.log("🚀 Đang gửi Login:", { username, password });
 
     try {
         const res = await fetch('/api/login', {
@@ -95,54 +69,29 @@ export async function login(userArg, passArg, roomArg) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
-
         if (!res.ok) {
-            const errorText = await res.text();
-            if (res.status === 422) return alert("Lỗi dữ liệu (422).");
-            if (res.status === 401) return alert("Sai tài khoản hoặc mật khẩu!");
-            return alert("Lỗi: " + errorText);
+            const err = await res.text();
+            if(res.status === 422) return alert("Lỗi dữ liệu (422).");
+            return alert("Lỗi: " + err);
         }
-
         const data = await res.json();
-
         if (data.status === 'ok') {
-            console.log("✅ Login thành công!");
-
             localStorage.setItem('loto_user', data.username);
             localStorage.setItem('loto_role', data.role);
             localStorage.setItem('loto_balance', data.balance);
-
             state.currentUser = data.username;
             state.userRole = data.role;
             state.currentRoomId = roomId;
 
-            if (data.role === 'admin') {
-                navToAdminDashboard();
-            } else {
-                navToLobby();
-            }
+            if (data.role === 'admin') navToAdminDashboard();
+            else navToLobby();
 
-            // Update UI Info Global
-            const nameEl = document.getElementById('display-name');
-            if(nameEl) nameEl.innerText = state.currentUser;
-
-            const balEl = document.getElementById('display-balance');
-            if(balEl) balEl.innerText = new Intl.NumberFormat('vi-VN').format(data.balance);
-
-            const avaEl = document.getElementById('avatar-char');
-            if(avaEl) avaEl.innerText = state.currentUser.charAt(0).toUpperCase();
-
-            if (typeof roomArg === 'string') {
-                connectWS();
-            }
+            if (typeof roomArg === 'string') connectWS();
         }
-    } catch (e) {
-        alert("Lỗi kết nối Server!");
-        console.error(e);
-    }
+    } catch (e) { alert("Lỗi kết nối!"); console.error(e); }
 }
 
-// --- 3. ADMIN USER MANAGER (LIST & EDIT) ---
+// --- 3. ADMIN MANAGER (CREATE, EDIT, DELETE) ---
 
 export async function loadUserList() {
     const tbody = document.getElementById('user-list-body');
@@ -155,6 +104,12 @@ export async function loadUserList() {
             const users = await res.json();
             tbody.innerHTML = "";
             users.forEach(u => {
+                // Logic ẩn nút xóa chính mình
+                const isSelf = u.username === state.currentUser;
+                const deleteBtn = isSelf
+                    ? `<span style="color:#ccc; font-size:0.8em;">(Bạn)</span>`
+                    : `<button class="btn" style="background: #e74c3c; padding: 5px 10px; font-size: 0.8em; margin-left: 5px;" onclick="deleteUser('${u.username}')">🗑️ Xóa</button>`;
+
                 tbody.innerHTML += `
                     <tr>
                         <td style="padding:10px; font-weight:bold;">${u.username}</td>
@@ -168,6 +123,7 @@ export async function loadUserList() {
                         </td>
                         <td style="padding:10px; text-align: center;">
                             <button class="btn" style="background: #3498db; padding: 5px 10px; font-size: 0.8em;" onclick="openEditModal('${u.username}', ${u.balance})">✏️ Sửa</button>
+                            ${deleteBtn}
                         </td>
                     </tr>
                 `;
@@ -176,17 +132,35 @@ export async function loadUserList() {
     } catch(e) { tbody.innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">Lỗi tải!</td></tr>'; }
 }
 
-// --- HÀM SỬA LỖI (FIX UPPERCASE BUG) ---
+// DELETE USER
+export async function deleteUser(targetUser) {
+    if (!confirm(`⚠️ CẢNH BÁO!\n\nBạn có chắc chắn muốn xóa user "${targetUser}"?\nHành động này không thể hoàn tác!`)) return;
+
+    try {
+        const res = await fetch('/api/admin/delete_user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_username: targetUser, admin_username: state.currentUser })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+            alert("✅ Đã xóa thành công!");
+            loadUserList();
+        } else {
+            alert("❌ Lỗi: " + data.message);
+        }
+    } catch (e) { alert("Lỗi kết nối!"); console.error(e); }
+}
+
+// EDIT USER (Fix Uppercase Bug)
 export function openEditModal(username, currentBalance) {
     const modal = document.getElementById('edit-user-modal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
 
     const span = document.getElementById('edit-target-username');
-    span.innerText = username; // Hiển thị (Có thể bị CSS làm in hoa)
-
-    // QUAN TRỌNG: Lưu username gốc vào dataset để dùng khi submit
-    span.dataset.rawUser = username;
+    span.innerText = username;
+    span.dataset.rawUser = username; // Lưu tên gốc
 
     document.getElementById('edit-new-balance').value = currentBalance;
     document.getElementById('edit-new-password').value = "";
@@ -199,16 +173,12 @@ export function closeEditModal() {
 }
 
 export async function submitEditUser() {
-    // QUAN TRỌNG: Lấy tên gốc từ dataset thay vì innerText
     const targetUser = document.getElementById('edit-target-username').dataset.rawUser;
-
     const newPass = document.getElementById('edit-new-password').value.trim();
     const newBalInput = document.getElementById('edit-new-balance').value;
 
     let finalBalance = null;
-    if (newBalInput !== "") {
-        finalBalance = parseInt(newBalInput);
-    }
+    if (newBalInput !== "") finalBalance = parseInt(newBalInput);
 
     const payload = {
         target_username: targetUser,
@@ -217,8 +187,6 @@ export async function submitEditUser() {
         new_password: newPass || null
     };
 
-    console.log("🚀 Sending Edit:", payload);
-
     try {
         const res = await fetch('/api/admin/update_user', {
             method: 'POST',
@@ -226,25 +194,23 @@ export async function submitEditUser() {
             body: JSON.stringify(payload)
         });
         const data = await res.json();
-
         if (data.status === 'ok') {
             alert("✅ Cập nhật thành công!");
             closeEditModal();
-            loadUserList(); // Refresh lại danh sách
+            loadUserList();
         } else {
-            alert("❌ Lỗi: " + data.message);
+            alert("❌ " + data.message);
         }
-    } catch (e) { alert("Lỗi kết nối!"); console.error(e); }
+    } catch (e) { alert("Lỗi kết nối!"); }
 }
 
+// CREATE USER
 export async function createNewUser() {
     const u = document.getElementById('new-username').value.trim();
     const p = document.getElementById('new-password').value.trim();
     const r = document.getElementById('new-role').value;
-
-    // MỚI: Lấy số dư ban đầu
     const balInput = document.getElementById('new-initial-balance').value;
-    const initialBalance = balInput ? parseInt(balInput) : 0; // Mặc định là 0 nếu để trống
+    const bal = balInput ? parseInt(balInput) : 0;
 
     if (!u || !p) return alert("Thiếu tên hoặc mật khẩu!");
 
@@ -253,11 +219,7 @@ export async function createNewUser() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                username: u,
-                password: p,
-                role: r,
-                balance: initialBalance, // MỚI: Gửi kèm balance
-                creator: state.currentUser
+                username: u, password: p, role: r, balance: bal, creator: state.currentUser
             })
         });
         const data = await res.json();
@@ -265,7 +227,7 @@ export async function createNewUser() {
             alert("✅ Tạo thành công!");
             document.getElementById('new-username').value = "";
             document.getElementById('new-password').value = "";
-            document.getElementById('new-initial-balance').value = ""; // Reset ô này
+            document.getElementById('new-initial-balance').value = "";
             loadUserList();
         } else {
             alert("❌ " + data.message);
@@ -273,8 +235,7 @@ export async function createNewUser() {
     } catch(e) { alert("Lỗi kết nối!"); }
 }
 
-// --- 4. ROOM & GAME HELPERS ---
-
+// --- 4. ROOM & GAME ---
 export async function refreshRoomList() {
     const container = document.getElementById('room-list');
     if (!container) return;
@@ -293,7 +254,7 @@ export async function refreshRoomList() {
             div.innerHTML = `<div><span class="room-id">🚪 ${room.id}</span> <span style="font-size:0.8em">Host: ${room.host || '-'}</span></div><div class="room-count">👤 ${room.count}/16</div>`;
             container.appendChild(div);
         });
-    } catch (e) { console.error("Lỗi lấy danh sách phòng"); }
+    } catch (e) { console.error(e); }
 }
 
 export function createRandomRoom() {
@@ -305,13 +266,10 @@ export function createRandomRoom() {
 export function joinRoom(roomId) {
     if (!state.currentUser) return alert("Chưa đăng nhập!");
     state.currentRoomId = roomId;
-
     document.getElementById('display-name').innerText = state.currentUser;
     document.getElementById('display-room-id').innerText = roomId;
     document.getElementById('avatar-char').innerText = state.currentUser.charAt(0).toUpperCase();
-
     showScreen('game-grid');
-
     UI.initMasterBoard();
     fetchAndInitTickets();
     connectWS();
@@ -336,45 +294,38 @@ async function fetchAndInitTickets() {
     });
 }
 
-// EXPORT CÁC HÀM GAME
+// EXPORT GAME FUNCTIONS
 export function selectTicket(ticketId) {
     if (state.isConfirmed) return alert("Đã chốt vé!");
     if (state.myTicketIds.length >= 2) return alert("Max 2 vé!");
     if (state.myTicketIds.includes(ticketId)) return;
     state.ws.send(JSON.stringify({ cmd: "SELECT_TICKET", ticket_id: ticketId, username: state.currentUser, room_id: state.currentRoomId }));
 }
-
 export function unselectTicket(event, ticketId) {
     if (event) event.stopPropagation();
     if (state.isConfirmed) return alert("Đã chốt vé!");
     state.ws.send(JSON.stringify({ cmd: "UNSELECT_TICKET", ticket_id: ticketId, username: state.currentUser, room_id: state.currentRoomId }));
 }
-
 export function confirmSelection() {
     if (state.myTicketIds.length === 0) return alert("Chọn vé đi!");
     state.ws.send(JSON.stringify({ cmd: "CONFIRM_TICKET", username: state.currentUser, room_id: state.currentRoomId }));
     state.isConfirmed = true;
     UI.toggleViewMode();
 }
-
 export function setPrice() {
     const p = document.getElementById('host-price-input').value;
     state.ws.send(JSON.stringify({ cmd: "SET_PRICE", price: parseInt(p), username: state.currentUser, room_id: state.currentRoomId }));
 }
-
 export function transferHost() {
     const target = document.getElementById('transfer-target').value;
     if (target) state.ws.send(JSON.stringify({ cmd: "TRANSFER_HOST", target: target, username: state.currentUser, room_id: state.currentRoomId }));
 }
-
 export function hostAction(action) {
     state.ws.send(JSON.stringify({ cmd: action, username: state.currentUser, room_id: state.currentRoomId }));
 }
-
 export function signalWait() {
     state.ws.send(JSON.stringify({ cmd: "SIGNAL_WAIT", username: state.currentUser, room_id: state.currentRoomId }));
 }
-
 export function toggleAutoDraw() {
     const intervalInput = document.getElementById('auto-interval');
     if (!state.isAutoDrawing) {

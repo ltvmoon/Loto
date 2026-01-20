@@ -99,3 +99,9 @@ pub struct UpdateUserRequest {
     pub new_balance: Option<i64>,     // Số dư mới
     pub admin_username: String,       // Người thực hiện (để check quyền)
 }
+
+#[derive(Deserialize)]
+pub struct DeleteUserRequest {
+    pub target_username: String, // User cần xóa
+    pub admin_username: String,  // Admin thực hiện lệnh này
+}

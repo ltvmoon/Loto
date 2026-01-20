@@ -18,6 +18,7 @@ window.loadUserList = Actions.loadUserList;
 window.openEditModal = Actions.openEditModal;
 window.closeEditModal = Actions.closeEditModal;
 window.submitEditUser = Actions.submitEditUser;
+window.deleteUser = Actions.deleteUser; // <--- MỚI: Export hàm xóa
 
 // --- ROOM ---
 window.createRandomRoom = Actions.createRandomRoom;
@@ -34,18 +35,12 @@ window.hostAction = Actions.hostAction;
 window.toggleAutoDraw = Actions.toggleAutoDraw;
 
 window.onload = function() {
-    // Kiểm tra session khi vừa vào
     Actions.checkSession();
-
-    // Polling danh sách phòng
     setInterval(() => {
         const lobby = document.getElementById('lobby-screen');
-        // Chỉ refresh khi đang ở màn hình Lobby và màn hình không bị ẩn
         if (lobby && !lobby.classList.contains('hidden')) {
-            // SỬA LỖI: Thêm .catch() để xử lý Promise
-            Actions.refreshRoomList().catch(err => {
-                console.warn("Lỗi làm mới danh sách phòng:", err);
-            });
+            // Fix warning promise ignored
+            Actions.refreshRoomList().catch(err => console.error(err));
         }
     }, 5000);
 };
