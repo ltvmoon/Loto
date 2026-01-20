@@ -165,7 +165,6 @@ Dự án được phát hành dưới giấy phép [MIT License](LICENSE).
 
 ---
 
-<div align="center">
-  <p>Code with ❤️ by <strong>LTVMoon</strong></p>
-  <p>⭐ Nếu bạn thấy project hữu ích, hãy cho một star nhé!</p>
-</div>
+**Code with ❤️ by LTVMoon**
+
+⭐ Nếu bạn thấy project hữu ích, hãy cho một star nhé!
