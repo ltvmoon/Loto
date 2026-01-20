@@ -15,7 +15,13 @@ export function checkSession() {
             const welcome = document.getElementById('welcome-admin');
             if(welcome) welcome.innerText = `Xin chào, ${state.currentUser}`;
         } else {
-            navToLobby();
+            // MỚI: Tự động rejoin nếu đang chơi dở (lưu trong localStorage)
+            const savedRoom = localStorage.getItem('loto_current_room');
+            if (savedRoom) {
+                joinRoom(savedRoom);
+            } else {
+                navToLobby();
+            }
         }
     } else {
         showScreen('login-screen');
@@ -23,6 +29,14 @@ export function checkSession() {
 }
 
 export function logout() {
+    // Nếu đang trong phòng thì gửi lệnh Rời Phòng trước để xóa user trên server
+    if (state.currentRoomId && state.ws && state.ws.readyState === WebSocket.OPEN) {
+        state.ws.send(JSON.stringify({
+            cmd: "LEAVE_ROOM",
+            username: state.currentUser,
+            room_id: state.currentRoomId
+        }));
+    }
     localStorage.clear();
     window.location.reload();
 }
@@ -50,7 +64,18 @@ export function handleLobbyBack() {
     else logout();
 }
 export function leaveRoom() {
-    if (state.ws) state.ws.close();
+    if (state.ws) {
+        // Gửi lệnh LEAVE_ROOM để server xóa user
+        state.ws.send(JSON.stringify({
+            cmd: "LEAVE_ROOM",
+            username: state.currentUser,
+            room_id: state.currentRoomId
+        }));
+        state.ws.close();
+    }
+    // Xóa trạng thái phòng đã lưu để không auto-rejoin nữa
+    localStorage.removeItem('loto_current_room');
+
     UI.softResetGame();
     navToLobby();
 }
@@ -91,8 +116,7 @@ export async function login(userArg, passArg, roomArg) {
     } catch (e) { alert("Lỗi kết nối!"); console.error(e); }
 }
 
-// --- 3. ADMIN MANAGER (CREATE, EDIT, DELETE) ---
-
+// --- 3. ADMIN MANAGER ---
 export async function loadUserList() {
     const tbody = document.getElementById('user-list-body');
     if(!tbody) return;
@@ -104,7 +128,6 @@ export async function loadUserList() {
             const users = await res.json();
             tbody.innerHTML = "";
             users.forEach(u => {
-                // Logic ẩn nút xóa chính mình
                 const isSelf = u.username === state.currentUser;
                 const deleteBtn = isSelf
                     ? `<span style="color:#ccc; font-size:0.8em;">(Bạn)</span>`
@@ -132,7 +155,6 @@ export async function loadUserList() {
     } catch(e) { tbody.innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">Lỗi tải!</td></tr>'; }
 }
 
-// DELETE USER
 export async function deleteUser(targetUser) {
     if (!confirm(`⚠️ CẢNH BÁO!\n\nBạn có chắc chắn muốn xóa user "${targetUser}"?\nHành động này không thể hoàn tác!`)) return;
 
@@ -152,7 +174,6 @@ export async function deleteUser(targetUser) {
     } catch (e) { alert("Lỗi kết nối!"); console.error(e); }
 }
 
-// EDIT USER (Fix Uppercase Bug)
 export function openEditModal(username, currentBalance) {
     const modal = document.getElementById('edit-user-modal');
     modal.classList.remove('hidden');
@@ -160,7 +181,7 @@ export function openEditModal(username, currentBalance) {
 
     const span = document.getElementById('edit-target-username');
     span.innerText = username;
-    span.dataset.rawUser = username; // Lưu tên gốc
+    span.dataset.rawUser = username;
 
     document.getElementById('edit-new-balance').value = currentBalance;
     document.getElementById('edit-new-password').value = "";
@@ -204,7 +225,6 @@ export async function submitEditUser() {
     } catch (e) { alert("Lỗi kết nối!"); }
 }
 
-// CREATE USER
 export async function createNewUser() {
     const u = document.getElementById('new-username').value.trim();
     const p = document.getElementById('new-password').value.trim();
@@ -266,6 +286,10 @@ export function createRandomRoom() {
 export function joinRoom(roomId) {
     if (!state.currentUser) return alert("Chưa đăng nhập!");
     state.currentRoomId = roomId;
+
+    // MỚI: Lưu ID phòng để reconnect
+    localStorage.setItem('loto_current_room', roomId);
+
     document.getElementById('display-name').innerText = state.currentUser;
     document.getElementById('display-room-id').innerText = roomId;
     document.getElementById('avatar-char').innerText = state.currentUser.charAt(0).toUpperCase();

@@ -92,7 +92,8 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                             let rid = data["room_id"].as_str().unwrap_or("101").to_string();
                             let room = state_clone.rooms.entry(rid.clone()).or_insert_with(|| Arc::new(Room::new(rid.clone())));
 
-                            if room.users.len() >= 16 {
+                            let is_reconnect = room.users.contains_key(&u);
+                            if !is_reconnect && room.users.len() >= 16 {
                                 let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Phòng đầy (16/16)!" }).to_string().into())).await;
                                 continue;
                             }
@@ -107,17 +108,30 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                 |row| Ok((row.get(0)?, row.get(1)?))
                             ).unwrap_or((0, "user".to_string()));
 
-                            room.users.insert(u.clone(), UserInfo {
-                                username: u.clone(),
-                                score: balance,
-                                is_confirmed: false,
-                                role,
-                            });
+                            if is_reconnect {
+                                if let Some(mut existing_user) = room.users.get_mut(&u) {
+                                    existing_user.role = role;
+                                }
+                                println!("🔄 User {} kết nối lại phòng {}", u, rid);
+                            } else {
+                                room.users.insert(u.clone(), UserInfo {
+                                    username: u.clone(),
+                                    score: balance,
+                                    is_confirmed: false,
+                                    role,
+                                });
+                                let msg_txt = format!("{} vào phòng!", u);
+                                room.append_log(msg_txt.clone());
+                                let _ = state_clone.tx.send(json!({ "type": "USER_JOINED", "room_id": rid.clone(), "username": u, "message": msg_txt }).to_string());
+                            }
 
                             let is_new_host = {
                                 let mut host_lock = room.current_host.lock().unwrap();
                                 if host_lock.is_none() { *host_lock = Some(u.clone()); true } else { false }
                             };
+                            if is_new_host {
+                                let _ = state_clone.tx.send(json!({ "type": "HOST_CHANGED", "room_id": rid.clone(), "username": u.clone(), "message": format!("👑 {} là chủ phòng mới!", u) }).to_string());
+                            }
 
                             let history = room.drawn_numbers.lock().unwrap().clone();
                             let owners: std::collections::HashMap<u32, String> = room.ticket_owners.iter().map(|r| (*r.key(), r.value().clone())).collect();
@@ -134,16 +148,38 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                 "is_game_over": is_over, "waiters": waiters, "ticket_price": price,
                                 "logs": logs, "users": user_list
                             }).to_string().into())).await;
+                        },
 
-                            let msg_txt = format!("{} vào phòng!", u);
-                            room.append_log(msg_txt.clone());
-                            let _ = state_clone.tx.send(json!({ "type": "USER_JOINED", "room_id": rid, "username": u, "message": msg_txt }).to_string());
+                        // --- [SỬA LỖI Ở ĐÂY] ---
+                        "LEAVE_ROOM" => {
+                            let mut should_remove_room = false; // 1. Tạo cờ đánh dấu
 
-                            if is_new_host {
-                                let log_host = format!("👑 {} là chủ phòng mới!", u);
-                                room.append_log(log_host.clone());
-                                let _ = state_clone.tx.send(json!({ "type": "HOST_CHANGED", "room_id": rid, "username": u, "message": log_host }).to_string());
+                            if let Some(room) = state_clone.rooms.get(&my_room_id) {
+                                room.users.remove(&my_username);
+                                let _ = state_clone.tx.send(json!({ "type": "USER_LEFT", "room_id": my_room_id.clone(), "username": my_username.clone() }).to_string());
+
+                                let mut host_lock = room.current_host.lock().unwrap();
+                                if host_lock.as_ref() == Some(&my_username) {
+                                    if let Some(first) = room.users.iter().next() {
+                                        *host_lock = Some(first.key().clone());
+                                        let _ = state_clone.tx.send(json!({ "type": "HOST_CHANGED", "room_id": my_room_id.clone(), "username": first.key(), "message": format!("👑 {} là chủ phòng mới!", first.key()) }).to_string());
+                                    } else { *host_lock = None; }
+                                }
+
+                                // 2. Kiểm tra nếu phòng trống -> Đặt cờ = true (KHÔNG drop/remove ở đây)
+                                if room.users.is_empty() {
+                                    should_remove_room = true;
+                                }
+                            } // 3. Tại đây 'room' và 'host_lock' tự động được drop
+
+                            // 4. Xóa phòng ở ngoài block này
+                            if should_remove_room {
+                                state_clone.rooms.remove(&my_room_id);
+                                println!("🗑️ Phòng {} giải tán (User leave).", my_room_id);
                             }
+
+                            my_username = String::new();
+                            my_room_id = String::new();
                         },
 
                         _ => {
@@ -245,7 +281,6 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                             if room_thread.ticket_owners.is_empty() { let _ = st_thread.tx.send(json!({ "type": "AUTO_DRAW_STOPPED", "room_id": rid_thread, "message": "Hết vé!" }).to_string()); break; }
                                                             tokio::time::sleep(Duration::from_secs(interval_sec)).await;
 
-                                                            // SỬA: Khai báo không init để tránh warning "never read"
                                                             let new_num;
                                                             let history;
                                                             {
@@ -256,8 +291,8 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                                     let n = rng.random_range(1..=90);
                                                                     if !nums.contains(&n) {
                                                                         nums.push(n);
-                                                                        new_num = n; // Gán lần đầu
-                                                                        history = nums.clone(); // Gán lần đầu
+                                                                        new_num = n;
+                                                                        history = nums.clone();
                                                                         break;
                                                                     }
                                                                 }
@@ -340,29 +375,8 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                 }
             }
         }
-
-        if !my_username.is_empty() && !my_room_id.is_empty() {
-            let mut should_remove_room = false;
-            if let Some(room) = state_clone.rooms.get(&my_room_id) {
-                room.users.remove(&my_username);
-                let _ = state_clone.tx.send(json!({ "type": "USER_LEFT", "room_id": my_room_id, "username": my_username }).to_string());
-
-                let mut host_lock = room.current_host.lock().unwrap();
-                if host_lock.as_ref() == Some(&my_username) {
-                    if let Some(first) = room.users.iter().next() {
-                        *host_lock = Some(first.key().clone());
-                        let msg = format!("👑 {} là chủ phòng mới!", first.key());
-                        room.append_log(msg.clone());
-                        let _ = state_clone.tx.send(json!({ "type": "HOST_CHANGED", "room_id": my_room_id, "username": first.key(), "message": msg }).to_string());
-                    } else { *host_lock = None; }
-                }
-                if room.users.is_empty() { should_remove_room = true; }
-            }
-            if should_remove_room { state_clone.rooms.remove(&my_room_id); println!("🗑️ Phòng {} giải tán.", my_room_id); }
-        }
     });
 
-    // SỬA: Xóa ngoặc đơn thừa ở (&mut write_task) và dấu chấm phẩy thừa cuối cùng
     tokio::select! {
         _ = &mut write_task => { broadcast_task.abort(); recv_task.abort(); },
         _ = &mut broadcast_task => { write_task.abort(); recv_task.abort(); },
