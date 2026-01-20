@@ -33,6 +33,7 @@ window.setPrice = Actions.setPrice;
 window.transferHost = Actions.transferHost;
 window.hostAction = Actions.hostAction;
 window.toggleAutoDraw = Actions.toggleAutoDraw;
+window.toggleAutoMode = Actions.toggleAutoMode;
 
 window.onload = function() {
     Actions.checkSession();

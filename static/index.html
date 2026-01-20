@@ -166,7 +166,24 @@
                 </div>
             </div>
             <div id="my-tickets-dashboard" class="panel">
-                <h3>🎫 Vé Của Bạn (<span id="ticket-count">0</span>/2)</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; margin-bottom: 10px;">
+                    <h3 style="border:none; margin:0; padding:0;">🎫 Vé Của Bạn (<span id="ticket-count">0</span>/2)</h3>
+
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="mode-label" style="font-size: 0.9em; font-weight: bold; color: #7f8c8d;">Manual (Tự chọn)</span>
+                        <label class="switch" style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                            <input type="checkbox" id="auto-mode-toggle" onclick="toggleAutoMode(this)">
+                            <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+                            <style>
+                                .switch input { opacity: 0; width: 0; height: 0; }
+                                .slider.round:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+                                input:checked + .slider { background-color: #2196F3; }
+                                input:checked + .slider:before { transform: translateX(26px); }
+                            </style>
+                        </label>
+                    </div>
+                </div>
+
                 <div id="my-tickets-container" class="my-ticket-wrapper"></div>
                 <div id="confirm-section" class="hidden" style="margin-top: 15px;"><button class="btn btn-success" onclick="confirmSelection()">✅ XÁC NHẬN CHỐT VÉ</button></div>
             </div>

@@ -227,13 +227,41 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                         }
                                     },
                                     "SIGNAL_WAIT" => {
-                                        let has_ticket = room.ticket_owners.iter().any(|r| r.value() == &my_username);
-                                        if !has_ticket {
-                                            let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Bạn là khán giả, không được báo chờ!" }).to_string().into())).await;
-                                        } else if !*room.is_game_over.lock().unwrap() {
-                                            let mut count = room.waiting_counts.entry(my_username.clone()).or_insert(0);
-                                            *count += 1; let c = *count; drop(count);
-                                            let _ = state_clone.tx.send(json!({ "type": "USER_WAITING", "room_id": my_room_id, "username": my_username, "count": c, "message": format!("⚠️ {} ĐANG CHỜ ({} hàng)!", my_username, c) }).to_string());
+                                        let ticket_count = room.ticket_owners.iter().filter(|r| r.value() == &my_username).count();
+
+                                        // 1. Kiểm tra nếu không có vé
+                                        if ticket_count == 0 {
+                                            let _ = ws_tx_logic.send(Message::Text(json!({
+                                                    "type": "ERROR",
+                                                    "message": "Bạn là khán giả, không được báo chờ!"
+                                                }).to_string().into())).await;
+                                        }
+                                        // 2. Kiểm tra nếu game chưa kết thúc
+                                        else if !*room.is_game_over.lock().unwrap() {
+                                            let mut count_entry = room.waiting_counts.entry(my_username.clone()).or_insert(0);
+
+                                            // Logic giới hạn: 9 lần cho mỗi vé
+                                            let max_allowed = (ticket_count * 9) as u32;
+
+                                            if *count_entry >= max_allowed {
+                                                // Đã đạt giới hạn, không tăng count nữa và báo lỗi
+                                                let _ = ws_tx_logic.send(Message::Text(json!({
+                                                        "type": "ERROR",
+                                                        "message": format!("Bạn đã báo chờ tối đa {} lần!", max_allowed)
+                                                    }).to_string().into())).await;
+                                            } else {
+                                                *count_entry += 1;
+                                                let c = *count_entry;
+                                                drop(count_entry); // Thả lock để gửi message
+
+                                                let _ = state_clone.tx.send(json!({
+                                                        "type": "USER_WAITING",
+                                                        "room_id": my_room_id,
+                                                        "username": my_username,
+                                                        "count": c,
+                                                        "message": format!("⚠️ {} ĐANG CHỜ ({} hàng)!", my_username, c)
+                                                    }).to_string());
+                                            }
                                         }
                                     },
                                     "SET_PRICE" => {

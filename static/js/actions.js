@@ -32,7 +32,7 @@ export function logout() {
     // Nếu đang trong phòng thì gửi lệnh Rời Phòng trước để xóa user trên server
     if (state.currentRoomId && state.ws && state.ws.readyState === WebSocket.OPEN) {
         state.ws.send(JSON.stringify({
-            cmd: "LEAVE_ROOM",
+            cmd: "LEAVE_ROOM", // Server sẽ xóa user
             username: state.currentUser,
             room_id: state.currentRoomId
         }));
@@ -365,4 +365,8 @@ export function toggleAutoDraw() {
     } else {
         state.ws.send(JSON.stringify({ cmd: "STOP_AUTO_DRAW", username: state.currentUser, room_id: state.currentRoomId }));
     }
+}
+
+export function toggleAutoMode(checkbox) {
+    handleAutoModeToggle(checkbox.checked);
 }

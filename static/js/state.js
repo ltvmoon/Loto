@@ -14,5 +14,6 @@ export const state = {
     availableRooms: [],
     onlineUsers: [],
     ticketOwners: {},
-    hasGameStartedOnce: false
+    hasGameStartedOnce: false,
+    isAutoMode: false, // <-- THÊM DÒNG NÀY (mặc định Manual)
 };

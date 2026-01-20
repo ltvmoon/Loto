@@ -1,18 +1,25 @@
 import { state } from './state.js';
-import * as Actions from './actions.js'; // Để gọi unselectTicket từ HTML được tạo ra
+import * as Actions from './actions.js';
 
 export function log(text) {
     const p = document.createElement('p');
     p.innerText = text;
-    document.getElementById('log-area').prepend(p);
+    const logArea = document.getElementById('log-area');
+    if (logArea) logArea.prepend(p);
 }
 
 export function updateDisplay(current, history) {
-    document.getElementById('current-ball').innerText = current;
+    // FIX: Convert number to string
+    const currentBall = document.getElementById('current-ball');
+    if (currentBall) currentBall.innerText = current.toString();
+
     if (history && history.length > 0) {
         const reversed = [...history].reverse();
         const recent5 = reversed.slice(1, 6);
-        document.getElementById('recent-history-list').innerText = recent5.length > 0 ? recent5.join(" - ") : "Mới bắt đầu";
+        const historyList = document.getElementById('recent-history-list');
+        if (historyList) {
+            historyList.innerText = recent5.length > 0 ? recent5.join(" - ") : "Mới bắt đầu";
+        }
         updateMasterBoard(history);
     }
 }
@@ -26,34 +33,46 @@ function updateMasterBoard(history) {
             if (index === history.length - 1) cell.classList.add('latest');
         }
     });
-    document.getElementById('stat-drawn').innerText = history.length;
-    document.getElementById('stat-remain').innerText = 90 - history.length;
+    // FIX: Convert number to string
+    const statDrawn = document.getElementById('stat-drawn');
+    const statRemain = document.getElementById('stat-remain');
+    if (statDrawn) statDrawn.innerText = history.length.toString();
+    if (statRemain) statRemain.innerText = (90 - history.length).toString();
 }
 
 export function initMasterBoard() {
     const grid = document.getElementById('master-grid');
+    if (!grid) return;
     grid.innerHTML = "";
     for (let i = 1; i <= 90; i++) {
         const cell = document.createElement('div');
         cell.className = 'mb-cell';
         cell.id = `mb-${i}`;
-        cell.innerText = i;
+        // FIX: Convert number to string
+        cell.innerText = i.toString();
         grid.appendChild(cell);
     }
 }
 
 export function updateUserListUI() {
     const container = document.getElementById('participants-list');
+    if (!container) return;
     container.innerHTML = "";
-    document.getElementById('user-count').innerText = state.onlineUsers.length;
+
+    // FIX: Convert number to string
+    const userCount = document.getElementById('user-count');
+    if (userCount) userCount.innerText = state.onlineUsers.length.toString();
 
     const activePlayers = new Set(Object.values(state.ticketOwners));
-    const gameRunning = document.getElementById('stat-drawn').innerText !== "0";
+    const statDrawn = document.getElementById('stat-drawn');
+    const gameRunning = statDrawn && statDrawn.innerText !== "0";
 
     state.onlineUsers.forEach(u => {
         const div = document.createElement('div');
         div.className = 'p-item';
-        let roleTag = "";
+
+        // FIX: "Variable initializer is redundant"
+        let roleTag;
         if (u === state.currentHost) roleTag = '<span class="p-host">👑 Host</span>';
         else if (activePlayers.has(u)) roleTag = '<span class="p-player">🎫 Chơi</span>';
         else if (gameRunning) roleTag = '<span class="p-spectator">👓 Khán giả</span>';
@@ -68,12 +87,14 @@ export function updateUserListUI() {
 
 export function updateHostTransferDropdown() {
     const select = document.getElementById('transfer-target');
+    if (!select) return;
     const currentVal = select.value;
     select.innerHTML = '<option value="">-- Chọn --</option>';
     state.onlineUsers.forEach(u => {
         if (u !== state.currentUser) {
             const opt = document.createElement('option');
-            opt.value = u; opt.innerText = u;
+            opt.value = u;
+            opt.innerText = u;
             select.appendChild(opt);
         }
     });
@@ -82,15 +103,18 @@ export function updateHostTransferDropdown() {
 
 export function checkHostStatus(hostName) {
     const panel = document.getElementById('host-panel');
+    const nameDisplay = document.getElementById('display-name');
+    if (!panel || !nameDisplay) return;
+
     if (hostName === state.currentUser) {
         state.isHost = true;
         panel.classList.remove('hidden');
-        document.getElementById('display-name').innerText = state.currentUser + " 👑";
+        nameDisplay.innerText = state.currentUser + " 👑";
         updateHostTransferDropdown();
     } else {
         state.isHost = false;
         panel.classList.add('hidden');
-        document.getElementById('display-name').innerText = state.currentUser;
+        nameDisplay.innerText = state.currentUser;
     }
 }
 
@@ -98,8 +122,11 @@ export function updateEconomicUI(price, totalTickets) {
     state.currentTicketPrice = price;
     state.totalSoldTickets = totalTickets;
     const pot = price * totalTickets;
-    document.getElementById('current-price-display').innerText = new Intl.NumberFormat('vi-VN').format(price);
-    document.getElementById('current-pot-display').innerText = new Intl.NumberFormat('vi-VN').format(pot);
+    // Intl format returns string -> OK
+    const priceDisplay = document.getElementById('current-price-display');
+    const potDisplay = document.getElementById('current-pot-display');
+    if (priceDisplay) priceDisplay.innerText = new Intl.NumberFormat('vi-VN').format(price);
+    if (potDisplay) potDisplay.innerText = new Intl.NumberFormat('vi-VN').format(pot);
 }
 
 export function updateAutoDrawUI(status) {
@@ -108,17 +135,26 @@ export function updateAutoDrawUI(status) {
     const btnReset = document.getElementById('btn-reset-game');
     state.isAutoDrawing = status;
 
+    if (!btn || !intervalInput || !btnReset) return;
+
     if (status) {
-        btn.innerHTML = "⏸ DỪNG"; btn.className = "btn btn-stop"; intervalInput.disabled = true;
-        btnReset.disabled = true; btnReset.classList.add('btn-disabled');
+        btn.innerHTML = "⏸ DỪNG";
+        btn.className = "btn btn-stop";
+        intervalInput.disabled = true;
+        btnReset.disabled = true;
+        btnReset.classList.add('btn-disabled');
     } else {
-        btn.innerHTML = "▶ QUAY"; btn.className = "btn btn-draw"; intervalInput.disabled = false;
-        btnReset.disabled = false; btnReset.classList.remove('btn-disabled');
+        btn.innerHTML = "▶ QUAY";
+        btn.className = "btn btn-draw";
+        intervalInput.disabled = false;
+        btnReset.disabled = false;
+        btnReset.classList.remove('btn-disabled');
     }
 }
 
 export function updateWaitLeaderboard() {
     const container = document.getElementById('wait-leaderboard');
+    if (!container) return;
     container.innerHTML = "";
     const entries = Object.entries(state.waitingMap);
     if (entries.length === 0) {
@@ -136,6 +172,7 @@ export function updateWaitLeaderboard() {
 
 export function addStatusLog(username, statusText, type) {
     const area = document.getElementById('win-status-area');
+    if (!area) return;
     while (area.children.length >= 5) { area.removeChild(area.lastChild); }
     const div = document.createElement('div');
     div.className = `status-card st-${type}`;
@@ -178,7 +215,7 @@ export function updateTicketStatus(ticketId, owner) {
         if (poolThumb) poolThumb.classList.add('selected');
         if (!existingMyTicket) {
             const ticketDOM = renderMyTicketDOM(ticketId);
-            myContainer.appendChild(ticketDOM);
+            if (ticketDOM && myContainer) myContainer.appendChild(ticketDOM);
         }
         if (!state.isConfirmed) updateConfirmedUI(false);
     } else {
@@ -191,22 +228,40 @@ export function updateTicketStatus(ticketId, owner) {
             if (l) { l.innerText = owner; l.style.display = 'block'; }
         }
     }
-    document.getElementById('ticket-count').innerText = state.myTicketIds.length;
+    const countEl = document.getElementById('ticket-count');
+    // FIX: Convert number to string
+    if (countEl) countEl.innerText = state.myTicketIds.length.toString();
     toggleViewMode();
 }
 
 function renderMyTicketDOM(ticketId) {
     const ticketData = state.ticketDataMap[ticketId];
     if (!ticketData) return null;
+
     const ticketDiv = document.createElement('div');
     ticketDiv.className = 'ticket-detail';
     ticketDiv.id = `my-ticket-${ticketId}`;
     ticketDiv.style.borderColor = ticketData.color;
+
+    // FIX: "Deprecated symbol used" - Thay thế innerHTML chứa inline 'event' bằng createElement
     const header = document.createElement('div');
     header.className = 'ticket-header';
     header.style.backgroundColor = ticketData.color;
-    // Quan trọng: onclick gọi unselectTicket
-    header.innerHTML = `<span>#${ticketId}</span><span class="btn-return-ticket" style="cursor:pointer" onclick="unselectTicket(event, ${ticketId})">✖ TRẢ VÉ</span>`;
+
+    // Tạo span ID vé
+    const spanId = document.createElement('span');
+    spanId.innerText = `#${ticketId}`;
+
+    // Tạo nút Trả vé bằng DOM API để tránh dùng 'event' trong chuỗi HTML
+    const btnReturn = document.createElement('span');
+    btnReturn.className = 'btn-return-ticket';
+    btnReturn.style.cursor = 'pointer';
+    btnReturn.innerText = '✖ TRẢ VÉ';
+    // Gán trực tiếp hàm onclick, không dùng inline string
+    btnReturn.onclick = (e) => Actions.unselectTicket(e, ticketId);
+
+    header.appendChild(spanId);
+    header.appendChild(btnReturn);
     ticketDiv.appendChild(header);
 
     ticketData.rows.forEach(rowCells => {
@@ -216,11 +271,15 @@ function renderMyTicketDOM(ticketId) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             if (cellValue !== null) {
-                cell.innerText = cellValue;
-                cell.dataset.value = cellValue;
+                // FIX: Convert number to string for innerText and dataset
+                cell.innerText = cellValue.toString();
+                cell.dataset.value = cellValue.toString();
+
                 cell.onclick = (e) => {
                     e.stopPropagation();
                     cell.classList.toggle('marked');
+
+                    // FIX: "Local variable ticketColor is redundant" - Inline trực tiếp
                     cell.style.backgroundColor = cell.classList.contains('marked') ? ticketData.color : "";
                 };
             }
@@ -249,6 +308,8 @@ export function toggleViewMode() {
     const pool = document.getElementById('pool-area');
     const conf = document.getElementById('confirm-section');
     const btnWait = document.getElementById('btn-wait');
+    if (!pool || !conf || !btnWait) return;
+
     if (state.myTicketIds.length === 0) {
         pool.classList.remove('hidden'); conf.classList.add('hidden'); btnWait.classList.add('hidden');
     } else if (!state.isConfirmed) {
@@ -263,13 +324,52 @@ export function speakNumber(num) {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(`Số ${num}`);
         u.lang = 'vi-VN';
+        u.rate = 1.6;
         window.speechSynthesis.speak(u);
     }
 }
 
+export function handleAutoModeToggle(isChecked) {
+    state.isAutoMode = isChecked;
+    const label = document.getElementById('mode-label');
+
+    if (state.isAutoMode) {
+        if(label) label.innerText = "Auto (Tự tô)";
+        label.style.color = "#27ae60";
+    } else {
+        if(label) label.innerText = "Manual (Tự chọn)";
+        label.style.color = "#7f8c8d";
+    }
+
+    const drawnCells = document.querySelectorAll('.mb-cell.active');
+    const drawnNumbers = Array.from(drawnCells).map(el => parseInt(el.id.replace('mb-', '')));
+
+    document.querySelectorAll('.ticket-detail .cell').forEach(cell => {
+        const val = parseInt(cell.dataset.value);
+        if (drawnNumbers.includes(val)) {
+            // FIX: "Local variable ticketColor is redundant" - Inline vào logic
+            if (state.isAutoMode) {
+                cell.classList.add('marked');
+                cell.style.backgroundColor = cell.closest('.ticket-detail').style.borderColor;
+            } else {
+                cell.classList.remove('marked');
+                cell.style.backgroundColor = "";
+            }
+        }
+    });
+}
+
 export function highlightMyNumbers(num) {
     document.querySelectorAll('.ticket-detail .cell').forEach(cell => {
-        if (parseInt(cell.dataset.value) === num) cell.classList.add('highlight');
+        // parseInt trả về number, dataset.value là string, so sánh OK nhưng logic tốt hơn là convert num to string
+        if (parseInt(cell.dataset.value) === num) {
+            cell.classList.add('highlight');
+            if (state.isAutoMode) {
+                cell.classList.add('marked');
+                // FIX: "Local variable ticketColor is redundant" - Inline trực tiếp
+                cell.style.backgroundColor = cell.closest('.ticket-detail').style.borderColor;
+            }
+        }
     });
 }
 
@@ -278,7 +378,8 @@ export function softResetGame() {
     state.myTicketIds = [];
     state.isConfirmed = false;
     state.ticketOwners = {};
-    document.getElementById('my-tickets-container').innerHTML = "";
+    const myContainer = document.getElementById('my-tickets-container');
+    if(myContainer) myContainer.innerHTML = "";
     updateConfirmedUI(false);
     document.querySelectorAll('.ticket-thumb').forEach(t => {
         t.classList.remove('taken', 'selected');
@@ -286,13 +387,24 @@ export function softResetGame() {
         if (l) { l.innerText = ""; l.style.display = 'none'; }
     });
     initMasterBoard();
-    document.getElementById('stat-drawn').innerText = "0";
-    document.getElementById('stat-remain').innerText = "90";
-    document.getElementById('current-ball').innerText = "--";
-    document.getElementById('recent-history-list').innerText = "...";
+
+    // FIX: Convert string literal to string (thực ra "0" là string rồi, nhưng để consistency)
+    const statDrawn = document.getElementById('stat-drawn');
+    const statRemain = document.getElementById('stat-remain');
+    if(statDrawn) statDrawn.innerText = "0";
+    if(statRemain) statRemain.innerText = "90";
+
+    const curBall = document.getElementById('current-ball');
+    if(curBall) curBall.innerText = "--";
+
+    const hist = document.getElementById('recent-history-list');
+    if(hist) hist.innerText = "...";
+
     state.waitingMap = {};
     updateWaitLeaderboard();
-    document.getElementById('win-status-area').innerHTML = "";
+    const winArea = document.getElementById('win-status-area');
+    if(winArea) winArea.innerHTML = "";
+
     setGameDisabled(false);
     updateEconomicUI(state.currentTicketPrice, 0);
 }
