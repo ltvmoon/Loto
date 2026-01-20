@@ -12,7 +12,7 @@ use tokio::sync::broadcast;
 use tower_http::services::ServeDir;
 use rusqlite::{Connection, params};
 use std::fs;
-use bcrypt::{hash, DEFAULT_COST};
+use bcrypt::hash;
 use std::env;
 use dotenvy::dotenv;
 

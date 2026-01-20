@@ -10,15 +10,18 @@ export function checkSession() {
     if (storedUser && storedRole) {
         state.currentUser = storedUser;
         state.userRole = storedRole;
-        if (state.userRole === 'admin') {
-            navToAdminDashboard();
-            const welcome = document.getElementById('welcome-admin');
-            if(welcome) welcome.innerText = `Xin chào, ${state.currentUser}`;
+
+        // Ưu tiên: Kiểm tra xem có phòng đang chơi dở không
+        const savedRoom = localStorage.getItem('loto_current_room');
+
+        if (savedRoom) {
+            joinRoom(savedRoom);
         } else {
-            // MỚI: Tự động rejoin nếu đang chơi dở (lưu trong localStorage)
-            const savedRoom = localStorage.getItem('loto_current_room');
-            if (savedRoom) {
-                joinRoom(savedRoom);
+            // Phân hướng theo Role
+            if (state.userRole === 'admin') {
+                navToAdminDashboard();
+                const welcome = document.getElementById('welcome-admin');
+                if(welcome) welcome.innerText = `Xin chào, ${state.currentUser}`;
             } else {
                 navToLobby();
             }
@@ -29,10 +32,10 @@ export function checkSession() {
 }
 
 export function logout() {
-    // Nếu đang trong phòng thì gửi lệnh Rời Phòng trước để xóa user trên server
+    // Nếu đang trong phòng thì gửi lệnh Rời Phòng trước
     if (state.currentRoomId && state.ws && state.ws.readyState === WebSocket.OPEN) {
         state.ws.send(JSON.stringify({
-            cmd: "LEAVE_ROOM", // Server sẽ xóa user
+            cmd: "LEAVE_ROOM",
             username: state.currentUser,
             room_id: state.currentRoomId
         }));
@@ -52,20 +55,28 @@ function showScreen(screenId) {
 }
 
 export function navToAdminDashboard() { showScreen('admin-dashboard'); }
-export function navToUserManager() { showScreen('admin-user-manager'); loadUserList(); }
+
+export function navToUserManager() {
+    showScreen('admin-user-manager');
+    // FIX: "Promise returned is ignored" - Thêm catch lỗi
+    loadUserList().catch(console.error);
+}
+
 export function navToLobby() {
     showScreen('lobby-screen');
     const el = document.getElementById('lobby-username');
     if(el) el.innerText = state.currentUser;
-    refreshRoomList();
+    // FIX: "Promise returned is ignored" - Thêm catch lỗi
+    refreshRoomList().catch(console.error);
 }
+
 export function handleLobbyBack() {
     if (state.userRole === 'admin') navToAdminDashboard();
     else logout();
 }
+
 export function leaveRoom() {
     if (state.ws) {
-        // Gửi lệnh LEAVE_ROOM để server xóa user
         state.ws.send(JSON.stringify({
             cmd: "LEAVE_ROOM",
             username: state.currentUser,
@@ -73,7 +84,6 @@ export function leaveRoom() {
         }));
         state.ws.close();
     }
-    // Xóa trạng thái phòng đã lưu để không auto-rejoin nữa
     localStorage.removeItem('loto_current_room');
 
     UI.softResetGame();
@@ -167,7 +177,7 @@ export async function deleteUser(targetUser) {
         const data = await res.json();
         if (data.status === 'ok') {
             alert("✅ Đã xóa thành công!");
-            loadUserList();
+            await loadUserList(); // FIX: Thêm await
         } else {
             alert("❌ Lỗi: " + data.message);
         }
@@ -218,7 +228,7 @@ export async function submitEditUser() {
         if (data.status === 'ok') {
             alert("✅ Cập nhật thành công!");
             closeEditModal();
-            loadUserList();
+            await loadUserList(); // FIX: Thêm await
         } else {
             alert("❌ " + data.message);
         }
@@ -248,7 +258,7 @@ export async function createNewUser() {
             document.getElementById('new-username').value = "";
             document.getElementById('new-password').value = "";
             document.getElementById('new-initial-balance').value = "";
-            loadUserList();
+            await loadUserList(); // FIX: Thêm await
         } else {
             alert("❌ " + data.message);
         }
@@ -279,7 +289,13 @@ export async function refreshRoomList() {
 
 export function createRandomRoom() {
     let newId; let attempts = 0;
-    do { newId = Math.floor(Math.random() * 900) + 100; attempts++; } while (state.availableRooms.find(r => r.id == newId) && attempts < 100);
+    do {
+        newId = Math.floor(Math.random() * 900) + 100;
+        attempts++;
+        // FIX: "Comparison r.id == newId may cause unexpected type coercion"
+        // r.id là string (từ server), newId là number -> convert newId sang string để so sánh ===
+    } while (state.availableRooms.find(r => r.id === newId.toString()) && attempts < 100);
+
     joinRoom(newId.toString());
 }
 
@@ -287,7 +303,6 @@ export function joinRoom(roomId) {
     if (!state.currentUser) return alert("Chưa đăng nhập!");
     state.currentRoomId = roomId;
 
-    // MỚI: Lưu ID phòng để reconnect
     localStorage.setItem('loto_current_room', roomId);
 
     document.getElementById('display-name').innerText = state.currentUser;
@@ -295,7 +310,10 @@ export function joinRoom(roomId) {
     document.getElementById('avatar-char').innerText = state.currentUser.charAt(0).toUpperCase();
     showScreen('game-grid');
     UI.initMasterBoard();
-    fetchAndInitTickets();
+
+    // FIX: "Promise returned from fetchAndInitTickets is ignored"
+    fetchAndInitTickets().catch(console.error);
+
     connectWS();
 }
 
@@ -306,13 +324,51 @@ async function fetchAndInitTickets() {
     if(!poolGrid) return;
     poolGrid.innerHTML = "";
     state.ticketDataMap = {};
+
     tickets.forEach(ticket => {
         state.ticketDataMap[ticket.id] = ticket;
+
+        // Tạo thẻ bao ngoài (Thumb)
         const thumb = document.createElement('div');
         thumb.className = 'ticket-thumb';
         thumb.id = `pool-ticket-${ticket.id}`;
         thumb.style.borderColor = ticket.color;
-        thumb.innerHTML = `<img src="/images/ticket-${ticket.id}.png" class="ticket-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'"><div style="display:none;font-weight:bold;font-size:1.2em;color:${ticket.color}">#${ticket.id}</div><div class="owner-name" style="position:absolute;bottom:0;width:100%;text-align:center;font-size:0.7em;background:rgba(255,255,255,0.9);font-weight:bold;padding:2px;display:none;"></div>`;
+
+        // --- BẮT ĐẦU FIX: Dùng DOM thay vì innerHTML để tránh warning onerror ---
+
+        // 1. Tạo thẻ Ảnh (Image)
+        const img = document.createElement('img');
+        img.src = `/images/ticket-${ticket.id}.png`;
+        img.className = 'ticket-img';
+        img.alt = `Vé ${ticket.id}`;
+
+        // Xử lý sự kiện lỗi ảnh bằng hàm (Clean Code)
+        img.onerror = function() {
+            this.style.display = 'none';       // Ẩn ảnh lỗi
+            fallbackDiv.style.display = 'block'; // Hiện số vé thay thế
+        };
+
+        // 2. Tạo thẻ Text thay thế (Fallback Div) - Mặc định ẩn
+        const fallbackDiv = document.createElement('div');
+        fallbackDiv.innerText = `#${ticket.id}`;
+        fallbackDiv.style.display = 'none';
+        fallbackDiv.style.fontWeight = 'bold';
+        fallbackDiv.style.fontSize = '1.2em';
+        fallbackDiv.style.color = ticket.color;
+
+        // 3. Tạo thẻ Tên người sở hữu (Owner Name)
+        const ownerDiv = document.createElement('div');
+        ownerDiv.className = 'owner-name';
+        // Set style trực tiếp (hoặc dùng cssText cho gọn)
+        ownerDiv.style.cssText = "position:absolute; bottom:0; width:100%; text-align:center; font-size:0.7em; background:rgba(255,255,255,0.9); font-weight:bold; padding:2px; display:none;";
+
+        // Gắn các thẻ con vào thumb
+        thumb.appendChild(img);
+        thumb.appendChild(fallbackDiv);
+        thumb.appendChild(ownerDiv);
+
+        // --- KẾT THÚC FIX ---
+
         thumb.onclick = () => selectTicket(ticket.id);
         poolGrid.appendChild(thumb);
     });
@@ -367,6 +423,8 @@ export function toggleAutoDraw() {
     }
 }
 
+// FIX: Export hàm toggleAutoMode để main.js có thể gắn vào window
+// UI.handleAutoModeToggle đã được import ở trên
 export function toggleAutoMode(checkbox) {
-    handleAutoModeToggle(checkbox.checked);
+    UI.handleAutoModeToggle(checkbox.checked);
 }

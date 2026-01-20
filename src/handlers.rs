@@ -6,7 +6,7 @@ use axum::{
 };
 use std::sync::Arc;
 use rusqlite::{params, Connection}; // Bắt buộc có params
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::{hash, verify};
 use crate::ws::handle_socket;
 // Nhớ thêm DeleteUserRequest vào đây (và phải khai báo trong model.rs)
 use crate::model::{AppState, LoginRequest, CreateUserRequest, UpdateUserRequest, DeleteUserRequest, Ticket, RoomSummary, UserData};
