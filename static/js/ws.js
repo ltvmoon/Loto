@@ -38,6 +38,8 @@ export function connectWS() {
             UI.updateEconomicUI(msg.ticket_price, Object.keys(msg.owners).length);
         }
         else if (msg.type === 'USER_JOINED') {
+            if (msg.username === state.currentUser) return;
+
             if (!state.onlineUsers.includes(msg.username)) state.onlineUsers.push(msg.username);
             UI.updateUserListUI();
             UI.log(msg.message);
@@ -86,8 +88,12 @@ export function connectWS() {
         }
         else if (msg.type === 'WINNER') {
             UI.updateAutoDrawUI(false);
-            UI.addStatusLog(msg.username, "🏆 CHIẾN THẮNG!", "win");
-            alert(msg.message);
+            // --- CẬP NHẬT MỚI: XÓA BẢNG CHỜ ---
+            state.waitingMap = {}; // Xóa dữ liệu chờ trong bộ nhớ
+            UI.updateWaitLeaderboard(); // Cập nhật lại giao diện (sẽ trở thành Trống)
+            // ----------------------------------
+            UI.addStatusLog("🏆", msg.message, "win");
+            alert("Chiến thắng: " + msg.message);
             UI.setGameDisabled(true);
             UI.log(msg.message);
         }

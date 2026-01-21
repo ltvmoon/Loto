@@ -9,7 +9,6 @@ export function log(text) {
 }
 
 export function updateDisplay(current, history) {
-    // FIX: Convert number to string
     const currentBall = document.getElementById('current-ball');
     if (currentBall) currentBall.innerText = current.toString();
 
@@ -33,7 +32,6 @@ function updateMasterBoard(history) {
             if (index === history.length - 1) cell.classList.add('latest');
         }
     });
-    // FIX: Convert number to string
     const statDrawn = document.getElementById('stat-drawn');
     const statRemain = document.getElementById('stat-remain');
     if (statDrawn) statDrawn.innerText = history.length.toString();
@@ -48,7 +46,6 @@ export function initMasterBoard() {
         const cell = document.createElement('div');
         cell.className = 'mb-cell';
         cell.id = `mb-${i}`;
-        // FIX: Convert number to string
         cell.innerText = i.toString();
         grid.appendChild(cell);
     }
@@ -59,7 +56,6 @@ export function updateUserListUI() {
     if (!container) return;
     container.innerHTML = "";
 
-    // FIX: Convert number to string
     const userCount = document.getElementById('user-count');
     if (userCount) userCount.innerText = state.onlineUsers.length.toString();
 
@@ -71,7 +67,6 @@ export function updateUserListUI() {
         const div = document.createElement('div');
         div.className = 'p-item';
 
-        // FIX: "Variable initializer is redundant"
         let roleTag;
         if (u === state.currentHost) roleTag = '<span class="p-host">👑 Host</span>';
         else if (activePlayers.has(u)) roleTag = '<span class="p-player">🎫 Chơi</span>';
@@ -122,7 +117,6 @@ export function updateEconomicUI(price, totalTickets) {
     state.currentTicketPrice = price;
     state.totalSoldTickets = totalTickets;
     const pot = price * totalTickets;
-    // Intl format returns string -> OK
     const priceDisplay = document.getElementById('current-price-display');
     const potDisplay = document.getElementById('current-pot-display');
     if (priceDisplay) priceDisplay.innerText = new Intl.NumberFormat('vi-VN').format(price);
@@ -229,7 +223,6 @@ export function updateTicketStatus(ticketId, owner) {
         }
     }
     const countEl = document.getElementById('ticket-count');
-    // FIX: Convert number to string
     if (countEl) countEl.innerText = state.myTicketIds.length.toString();
     toggleViewMode();
 }
@@ -243,21 +236,17 @@ function renderMyTicketDOM(ticketId) {
     ticketDiv.id = `my-ticket-${ticketId}`;
     ticketDiv.style.borderColor = ticketData.color;
 
-    // FIX: "Deprecated symbol used" - Thay thế innerHTML chứa inline 'event' bằng createElement
     const header = document.createElement('div');
     header.className = 'ticket-header';
     header.style.backgroundColor = ticketData.color;
 
-    // Tạo span ID vé
     const spanId = document.createElement('span');
     spanId.innerText = `#${ticketId}`;
 
-    // Tạo nút Trả vé bằng DOM API để tránh dùng 'event' trong chuỗi HTML
     const btnReturn = document.createElement('span');
     btnReturn.className = 'btn-return-ticket';
     btnReturn.style.cursor = 'pointer';
     btnReturn.innerText = '✖ TRẢ VÉ';
-    // Gán trực tiếp hàm onclick, không dùng inline string
     btnReturn.onclick = (e) => Actions.unselectTicket(e, ticketId);
 
     header.appendChild(spanId);
@@ -271,15 +260,12 @@ function renderMyTicketDOM(ticketId) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             if (cellValue !== null) {
-                // FIX: Convert number to string for innerText and dataset
                 cell.innerText = cellValue.toString();
                 cell.dataset.value = cellValue.toString();
 
                 cell.onclick = (e) => {
                     e.stopPropagation();
                     cell.classList.toggle('marked');
-
-                    // FIX: "Local variable ticketColor is redundant" - Inline trực tiếp
                     cell.style.backgroundColor = cell.classList.contains('marked') ? ticketData.color : "";
                 };
             }
@@ -320,13 +306,16 @@ export function toggleViewMode() {
 }
 
 export function speakNumber(num) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(`Số ${num}`);
-        u.lang = 'vi-VN';
-        u.rate = 1.6;
-        window.speechSynthesis.speak(u);
-    }
+    // PHƯƠNG ÁN: FILE TĨNH (STATIC ASSETS)
+    // Đảm bảo hoạt động 100% trên mọi trình duyệt
+
+    const audioPath = `/sounds/${num}.mp3`;
+    const audio = new Audio(audioPath);
+
+    // Xử lý lỗi nếu file chưa kịp tải hoặc đường dẫn sai
+    audio.play().catch(e => {
+        console.error(`Không thể phát file âm thanh: ${audioPath}`, e);
+    });
 }
 
 export function handleAutoModeToggle(isChecked) {
@@ -346,13 +335,16 @@ export function handleAutoModeToggle(isChecked) {
 
     document.querySelectorAll('.ticket-detail .cell').forEach(cell => {
         const val = parseInt(cell.dataset.value);
+
         if (drawnNumbers.includes(val)) {
-            // FIX: "Local variable ticketColor is redundant" - Inline vào logic
+            const ticketColor = cell.closest('.ticket-detail').style.borderColor;
+
             if (state.isAutoMode) {
                 cell.classList.add('marked');
-                cell.style.backgroundColor = cell.closest('.ticket-detail').style.borderColor;
+                cell.style.backgroundColor = ticketColor;
             } else {
                 cell.classList.remove('marked');
+                cell.classList.remove('highlight');
                 cell.style.backgroundColor = "";
             }
         }
@@ -360,15 +352,13 @@ export function handleAutoModeToggle(isChecked) {
 }
 
 export function highlightMyNumbers(num) {
+    if (!state.isAutoMode) return;
+
     document.querySelectorAll('.ticket-detail .cell').forEach(cell => {
-        // parseInt trả về number, dataset.value là string, so sánh OK nhưng logic tốt hơn là convert num to string
         if (parseInt(cell.dataset.value) === num) {
             cell.classList.add('highlight');
-            if (state.isAutoMode) {
-                cell.classList.add('marked');
-                // FIX: "Local variable ticketColor is redundant" - Inline trực tiếp
-                cell.style.backgroundColor = cell.closest('.ticket-detail').style.borderColor;
-            }
+            cell.classList.add('marked');
+            cell.style.backgroundColor = cell.closest('.ticket-detail').style.borderColor;
         }
     });
 }
@@ -388,7 +378,6 @@ export function softResetGame() {
     });
     initMasterBoard();
 
-    // FIX: Convert string literal to string (thực ra "0" là string rồi, nhưng để consistency)
     const statDrawn = document.getElementById('stat-drawn');
     const statRemain = document.getElementById('stat-remain');
     if(statDrawn) statDrawn.innerText = "0";
@@ -407,4 +396,9 @@ export function softResetGame() {
 
     setGameDisabled(false);
     updateEconomicUI(state.currentTicketPrice, 0);
+} // <--- ĐÃ THÊM DẤU ĐÓNG NGOẶC NÀY
+
+// Code load giọng đọc (để ở global scope)
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 }

@@ -27,7 +27,7 @@ fn update_balance(state: &Arc<AppState>, room_id: &str, username: &str, amount: 
     }
 }
 
-fn check_winner_in_room(state: &Arc<AppState>, room: &Arc<Room>) -> Option<Vec<(String, u32)>> {
+fn check_winner_in_room(state: &Arc<AppState>, room: &Arc<Room>) -> Option<Vec<(String, u32, String)>> {
     if *room.is_game_over.lock().unwrap() { return None; }
     let drawn_list = room.drawn_numbers.lock().unwrap().clone();
     if drawn_list.is_empty() { return None; }
@@ -36,11 +36,14 @@ fn check_winner_in_room(state: &Arc<AppState>, room: &Arc<Room>) -> Option<Vec<(
     for entry in room.ticket_owners.iter() {
         let ticket_id = *entry.key();
         let owner = entry.value().clone();
+
+        // Tìm vé để lấy màu
         if let Some(ticket) = state.tickets.iter().find(|t| t.id == ticket_id) {
             for row in &ticket.rows {
                 let nums: Vec<u8> = row.iter().filter_map(|&n| n).collect();
                 if !nums.is_empty() && nums.iter().all(|n| drawn_list.contains(n)) {
-                    winners.push((owner.clone(), ticket_id));
+                    // Trả về: (Tên, ID Vé, Màu Vé)
+                    winners.push((owner.clone(), ticket_id, ticket.color.clone()));
                     break;
                 }
             }
@@ -332,12 +335,29 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                                 let price = *room_thread.ticket_price.lock().unwrap();
                                                                 let pot = price * (room_thread.ticket_owners.len() as i64);
                                                                 let prize = if !winners.is_empty() { pot / (winners.len() as i64) } else { 0 };
-                                                                let mut names = Vec::new();
-                                                                for (name, _) in winners { names.push(name.clone()); update_balance(&st_thread, &rid_thread, &name, prize); }
 
-                                                                let msg_win = format!("🏆 {} THẮNG! (+{}đ)", names.join(", "), prize);
+                                                                let mut winner_messages = Vec::new();
+
+                                                                for (name, tid, color) in winners {
+                                                                    update_balance(&st_thread, &rid_thread, &name, prize);
+
+                                                                    // Format tiền đơn giản (hoặc để JS format nếu muốn đẹp hơn)
+                                                                    // Định dạng yêu cầu: Tên | Vé ID | Màu | Tiền
+                                                                    let info = format!("{} | Vé #{} | Màu {} | +{}đ", name, tid, color, prize);
+                                                                    winner_messages.push(info);
+                                                                }
+
+                                                                // Gộp các thông báo nếu có nhiều người cùng trúng
+                                                                let msg_win = winner_messages.join(" & ");
+
                                                                 room_thread.append_log(msg_win.clone());
-                                                                let _ = st_thread.tx.send(json!({ "type": "WINNER", "room_id": rid_thread, "username": "SERVER", "message": msg_win }).to_string());
+
+                                                                let _ = st_thread.tx.send(json!({
+                                                                    "type": "WINNER",
+                                                                    "room_id": rid_thread,
+                                                                    "username": "KẾT QUẢ", // Tên hiển thị đầu dòng trong log
+                                                                    "message": msg_win
+                                                                }).to_string());
                                                                 break;
                                                             }
                                                         }
