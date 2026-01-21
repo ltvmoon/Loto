@@ -101,6 +101,9 @@ export function connectWS() {
             state.hasGameStartedOnce = true; // QUAN TRỌNG: Xác nhận game đã chạy thành công
             UI.updateAutoDrawUI(true);
             UI.log(msg.message);
+            if (msg.interval) {
+                state.currentInterval = msg.interval;
+            }
             UI.updateUserListUI();
         }
         else if (msg.type === 'AUTO_DRAW_STOPPED') {

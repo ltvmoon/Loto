@@ -15,5 +15,6 @@ export const state = {
     onlineUsers: [],
     ticketOwners: {},
     hasGameStartedOnce: false,
-    isAutoMode: false, // <-- THÊM DÒNG NÀY (mặc định Manual)
+    isAutoMode: true,
+    currentInterval: 3,
 };

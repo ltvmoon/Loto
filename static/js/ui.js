@@ -312,6 +312,15 @@ export function speakNumber(num) {
     const audioPath = `/sounds/${num}.mp3`;
     const audio = new Audio(audioPath);
 
+    let rate = 1.1;
+    if (state.currentInterval <= 1) {
+        rate = 2.0; // Nếu 1s/số -> Đọc nhanh gấp đôi
+    } else if (state.currentInterval <= 2) {
+        rate = 1.5; // Nếu 2s/số -> Đọc nhanh gấp rưỡi
+    } else {
+        rate = 1.1; // Chậm hơn thì đọc bình thường
+    }
+    audio.playbackRate = rate;
     // Xử lý lỗi nếu file chưa kịp tải hoặc đường dẫn sai
     audio.play().catch(e => {
         console.error(`Không thể phát file âm thanh: ${audioPath}`, e);

@@ -301,7 +301,12 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                     let interval_sec = data["interval"].as_u64().unwrap_or(3);
                                                     let msg = format!("Bắt đầu quay ({}s/số)...", interval_sec);
                                                     room.append_log(msg.clone());
-                                                    let _ = state_clone.tx.send(json!({ "type": "AUTO_DRAW_STARTED", "room_id": my_room_id, "message": msg }).to_string());
+                                                    let _ = state_clone.tx.send(json!({
+                                                            "type": "AUTO_DRAW_STARTED",
+                                                            "room_id": my_room_id,
+                                                            "message": msg,
+                                                            "interval": interval_sec})
+                                                        .to_string());
 
                                                     let room_thread = room.clone();
                                                     let st_thread = state_clone.clone();
