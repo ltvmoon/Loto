@@ -1,0 +1,36 @@
+Hướng dẫn cài trong ubuntu:
+
+1. lệnh: ( gõ từng dòng 1)
+mkdir loto_data
+cd loto_data/
+nano .env
+
+2. trong file .env copy nội dung sau :
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=1
+SECRET_KEY=chello
+DATABASE_URL=loto.db
+
+( lưu ý : user và password thay đổi để tránh lộ)
+sau khi copy dữ liệu trên thì ấn theo lệnh sau:
+Ctrl + X
+yes modified
+enter
+
+3. gõ lệnh :
+git clone https://github.com/ltvmoon/Loto.git .
+touch loto.db
+sudo ufw allow 8888/tcp
+sudo ufw reload
+
+4.
+lần đầu chạy lệnh :
+docker compose up -d --build
+
+nếu sửa code thì phải :
+docker compose down
+git pull origin main
+docker compose up -d --build
+
+Nếu chỉ tắt server mở lại thì lệnh :
+docker compose up -d
