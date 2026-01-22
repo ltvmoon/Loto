@@ -1,0 +1,42 @@
+services:
+  # --- 1. BACKEND RUST ---
+  loto-backend:
+    build: .
+    container_name: loto_backend_app
+    restart: always
+    environment:
+      - DATABASE_URL=loto.db
+      - RUST_LOG=info
+    volumes:
+      # Mount DB ra ngoài để không mất dữ liệu khi restart
+      - ./loto.db:/app/loto.db
+      # Mount file tĩnh để update nóng (hot-reload) file nhạc/ảnh mà không cần build lại
+      - ./static:/app/static
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # --- 2. NGINX (WEB SERVER) ---
+  loto-nginx:
+    image: nginx:alpine
+    container_name: loto_nginx_server
+    restart: always
+    ports:
+      # Map cổng 8888 của server Ubuntu vào cổng 80 của container này
+      # Người dùng sẽ truy cập: http://IP-Server:8888
+      - "8888:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/app/static:ro
+    depends_on:
+      - loto-backend
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+# Tạo network riêng biệt, không dính líu đến dự án SMC cũ
+networks:
+  default:
+    name: loto_network
