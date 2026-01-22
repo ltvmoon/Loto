@@ -12,6 +12,7 @@ services:
       - ./loto.db:/app/loto.db
       # Mount file tĩnh để update nóng (hot-reload) file nhạc/ảnh mà không cần build lại
       - ./static:/app/static
+      - ./tickets.json:/app/tickets.json
     deploy:
       resources:
         limits:
