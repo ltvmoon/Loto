@@ -34,3 +34,6 @@ docker compose up -d --build
 
 Nếu chỉ tắt server mở lại thì lệnh :
 docker compose up -d
+
+vào game thì chỉ cần gõ
+http://[IP của máy]:8888 ( chạy port 8888)
