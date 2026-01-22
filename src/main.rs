@@ -12,7 +12,7 @@ use tokio::sync::broadcast;
 use tower_http::services::ServeDir;
 use rusqlite::{Connection, params};
 use std::fs;
-use bcrypt::hash;
+use bcrypt::hash; // Đã bỏ DEFAULT_COST warning
 use std::env;
 use dotenvy::dotenv;
 
@@ -25,7 +25,7 @@ use crate::handlers::{
     create_user_handler,
     get_all_users_handler,
     update_user_handler,
-    delete_user_handler // <--- MỚI
+    delete_user_handler
 };
 
 #[tokio::main]
@@ -56,17 +56,32 @@ async fn main() {
         .route("/api/login", post(login_handler))
         .route("/api/admin/create_user", post(create_user_handler))
         .route("/api/admin/update_user", post(update_user_handler))
-        .route("/api/admin/delete_user", post(delete_user_handler)) // <--- Route Mới
+        .route("/api/admin/delete_user", post(delete_user_handler))
         .route("/api/admin/users", get(get_all_users_handler))
         .route("/api/tickets", get(get_tickets_handler))
         .route("/api/rooms", get(get_rooms_handler))
         .route("/ws", get(ws_handler))
-        // Axum 0.8 dùng fallback_service thay vì nest_service cho static files
         .fallback_service(ServeDir::new("static"))
         .with_state(app_state);
 
+    // --- ĐOẠN CODE IN IP MỚI ---
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    println!("🚀 Server Loto running at http://localhost:3000");
+    let port = listener.local_addr().unwrap().port();
+
+    println!("\n=======================================================");
+    println!("🚀 LOTO SERVER ĐANG CHẠY!");
+    println!("-------------------------------------------------------");
+    println!("👉 Trên máy này:  http://localhost:{}", port);
+
+    match get_local_ip() {
+        Some(ip) => {
+            println!("👉 Mạng LAN:      http://{}:{}  <-- Gửi link này cho mọi người!", ip, port);
+        },
+        None => {
+            println!("⚠️  Không tìm thấy IP LAN. Hãy kiểm tra kết nối mạng.");
+        }
+    }
+    println!("=======================================================\n");
 
     // In thông báo nếu load được admin từ env (Debug)
     if let (Ok(u), Ok(_)) = (env::var("ADMIN_USERNAME"), env::var("ADMIN_PASSWORD")) {
@@ -94,7 +109,6 @@ fn init_db(path: &str) -> rusqlite::Result<()> {
         let admin_user = env::var("ADMIN_USERNAME").unwrap_or_else(|_| "admin".to_string());
         let admin_pass = env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "123456".to_string());
 
-        // Dùng Cost 4 cho nhanh
         let hashed = hash(&admin_pass, 4).unwrap();
 
         conn.execute(
@@ -105,4 +119,11 @@ fn init_db(path: &str) -> rusqlite::Result<()> {
     }
 
     Ok(())
+}
+
+// --- HÀM LẤY IP LOCAL ---
+fn get_local_ip() -> Option<std::net::IpAddr> {
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("8.8.8.8:80").ok()?;
+    socket.local_addr().ok().map(|addr| addr.ip())
 }

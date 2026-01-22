@@ -1,6 +1,31 @@
 import { state } from './state.js';
 import * as UI from './ui.js';
 
+/**
+ * Định nghĩa cấu trúc tin nhắn từ Server để IDE hiểu và không báo lỗi
+ * @typedef {Object} ServerMessage
+ * @property {string} type
+ * @property {string} [room_id]
+ * @property {string[]} [logs]
+ * @property {string[]} [users]
+ * @property {number[]} [numbers]
+ * @property {Object<string, string>} [owners]
+ * @property {Object<string, number>} [waiters]
+ * @property {string} [host]
+ * @property {boolean} [is_game_over]
+ * @property {number} [ticket_price]
+ * @property {string} [username]
+ * @property {string} [message]
+ * @property {number} [ticket_id]
+ * @property {string} [owner]
+ * @property {number} [value]
+ * @property {number[]} [history]
+ * @property {number} [count]
+ * @property {number} [balance]
+ * @property {number} [price]
+ * @property {number} [interval]
+ */
+
 export function connectWS() {
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
     state.ws = new WebSocket(`${proto}://${window.location.host}/ws`);

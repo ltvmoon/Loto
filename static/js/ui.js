@@ -312,9 +312,9 @@ export function speakNumber(num) {
     const audioPath = `/sounds/${num}.mp3`;
     const audio = new Audio(audioPath);
 
-    let rate = 1.1;
+    let rate;
     if (state.currentInterval <= 1) {
-        rate = 2.0; // Nếu 1s/số -> Đọc nhanh gấp đôi
+        rate = 1.8; // Nếu 1s/số -> Đọc nhanh gấp đôi
     } else if (state.currentInterval <= 2) {
         rate = 1.5; // Nếu 2s/số -> Đọc nhanh gấp rưỡi
     } else {
