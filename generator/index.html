@@ -296,7 +296,7 @@
 
             progress.innerText = "Đang nén file ZIP... Vui lòng chờ!";
             zip.generateAsync({type:"blob"}).then(function(content) {
-                saveAs(content, "Danh_Sach_Ve_Loto_Bemoon.zip");
+                window.saveAs(content, "Danh_Sach_Ve_Loto_Bemoon.zip");
                 loading.style.display = 'none';
             });
         }
