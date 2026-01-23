@@ -6,27 +6,28 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use std::sync::Arc;
+use bcrypt::hash;
 use dashmap::DashMap;
+use rusqlite::{params, Connection};
+use std::fs;
+use std::sync::Arc;
 use tokio::sync::broadcast;
 use tower_http::services::ServeDir;
-use rusqlite::{Connection, params};
-use std::fs;
-use bcrypt::hash; // Đã bỏ DEFAULT_COST warning
-use std::env;
 use dotenvy::dotenv;
+// Đã bỏ DEFAULT_COST warning
+use std::env;
 
-use crate::model::{AppState, Ticket};
 use crate::handlers::{
-    login_handler,
-    get_tickets_handler,
-    get_rooms_handler,
-    ws_handler,
     create_user_handler,
+    delete_user_handler,
     get_all_users_handler,
+    get_rooms_handler,
+    get_tickets_handler,
+    login_handler,
     update_user_handler,
-    delete_user_handler
+    ws_handler,
 };
+use crate::model::{AppState, Ticket};
 
 #[tokio::main]
 async fn main() {
@@ -76,7 +77,7 @@ async fn main() {
     match get_local_ip() {
         Some(ip) => {
             println!("👉 Mạng LAN:      http://{}:{}  <-- Gửi link này cho mọi người!", ip, port);
-        },
+        }
         None => {
             println!("⚠️  Không tìm thấy IP LAN. Hãy kiểm tra kết nối mạng.");
         }

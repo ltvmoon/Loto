@@ -1,12 +1,12 @@
 use axum::extract::ws::{Message, WebSocket};
 use futures::{sink::SinkExt, stream::StreamExt};
-use tokio::sync::mpsc;
+use rand::Rng;
+use rusqlite::{params, Connection};
+use serde_json::json;
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
-use std::collections::HashSet;
-use rand::Rng;
-use serde_json::json;
-use rusqlite::{Connection, params};
+use tokio::sync::mpsc;
 
 use crate::model::{AppState, Room, UserInfo};
 
@@ -15,7 +15,7 @@ fn update_balance(state: &Arc<AppState>, room_id: &str, username: &str, amount: 
     if let Ok(conn) = Connection::open(&state.db_path) {
         let _ = conn.execute(
             "UPDATE users SET balance = balance + ?1 WHERE username = ?2",
-            params![amount, username]
+            params![amount, username],
         );
     }
     if let Some(room) = state.rooms.get(room_id) {
@@ -108,7 +108,7 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                             let (balance, role): (i64, String) = conn.query_row(
                                 "SELECT balance, role FROM users WHERE username = ?1",
                                 params![u],
-                                |row| Ok((row.get(0)?, row.get(1)?))
+                                |row| Ok((row.get(0)?, row.get(1)?)),
                             ).unwrap_or((0, "user".to_string()));
 
                             if is_reconnect {
@@ -130,7 +130,10 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
 
                             let is_new_host = {
                                 let mut host_lock = room.current_host.lock().unwrap();
-                                if host_lock.is_none() { *host_lock = Some(u.clone()); true } else { false }
+                                if host_lock.is_none() {
+                                    *host_lock = Some(u.clone());
+                                    true
+                                } else { false }
                             };
                             if is_new_host {
                                 let _ = state_clone.tx.send(json!({ "type": "HOST_CHANGED", "room_id": rid.clone(), "username": u.clone(), "message": format!("👑 {} là chủ phòng mới!", u) }).to_string());
@@ -151,7 +154,7 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                 "is_game_over": is_over, "waiters": waiters, "ticket_price": price,
                                 "logs": logs, "users": user_list
                             }).to_string().into())).await;
-                        },
+                        }
 
                         // --- [SỬA LỖI Ở ĐÂY] ---
                         "LEAVE_ROOM" => {
@@ -183,7 +186,7 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
 
                             my_username = String::new();
                             my_room_id = String::new();
-                        },
+                        }
 
                         _ => {
                             if let Some(room) = current_room {
@@ -195,17 +198,13 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                             room.append_log(msg.clone());
                                             let _ = state_clone.tx.send(json!({ "type": "USER_CONFIRMED", "room_id": my_room_id, "username": my_username, "message": msg }).to_string());
                                         }
-                                    },
+                                    }
                                     "SELECT_TICKET" => {
                                         let ticket_id = data["ticket_id"].as_u64().unwrap_or(0) as u32;
                                         let has_started = !room.drawn_numbers.lock().unwrap().is_empty();
-                                        if *room.is_game_over.lock().unwrap() { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Game Over!" }).to_string().into())).await; }
-                                        else if has_started { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Ván đang chạy! Bạn là khán giả." }).to_string().into())).await; }
-                                        else if room.ticket_owners.contains_key(&ticket_id) { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Vé đã có chủ" }).to_string().into())).await; }
-                                        else {
+                                        if *room.is_game_over.lock().unwrap() { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Game Over!" }).to_string().into())).await; } else if has_started { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Ván đang chạy! Bạn là khán giả." }).to_string().into())).await; } else if room.ticket_owners.contains_key(&ticket_id) { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Vé đã có chủ" }).to_string().into())).await; } else {
                                             let my_count = room.ticket_owners.iter().filter(|r| r.value() == &my_username).count();
-                                            if my_count >= 2 { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Max 2 vé!" }).to_string().into())).await; }
-                                            else {
+                                            if my_count >= 2 { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Max 2 vé!" }).to_string().into())).await; } else {
                                                 let price = *room.ticket_price.lock().unwrap();
                                                 update_balance(&state_clone, &my_room_id, &my_username, -price);
 
@@ -214,21 +213,21 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                 let _ = state_clone.tx.send(json!({ "type": "TICKET_TAKEN", "room_id": my_room_id, "ticket_id": ticket_id, "owner": my_username }).to_string());
                                             }
                                         }
-                                    },
+                                    }
                                     "UNSELECT_TICKET" => {
                                         let ticket_id = data["ticket_id"].as_u64().unwrap_or(0) as u32;
                                         let has_started = !room.drawn_numbers.lock().unwrap().is_empty();
-                                        if has_started { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Ván đã chạy!" }).to_string().into())).await; }
-                                        else if let Some(owner) = room.ticket_owners.get(&ticket_id) {
+                                        if has_started { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Ván đã chạy!" }).to_string().into())).await; } else if let Some(owner) = room.ticket_owners.get(&ticket_id) {
                                             if owner.value() == &my_username {
-                                                drop(owner); room.ticket_owners.remove(&ticket_id);
+                                                drop(owner);
+                                                room.ticket_owners.remove(&ticket_id);
                                                 if let Some(mut u) = room.users.get_mut(&my_username) { u.is_confirmed = false; }
                                                 let price = *room.ticket_price.lock().unwrap();
                                                 update_balance(&state_clone, &my_room_id, &my_username, price);
                                                 let _ = state_clone.tx.send(json!({ "type": "TICKET_FREED", "room_id": my_room_id, "ticket_id": ticket_id }).to_string());
                                             }
                                         }
-                                    },
+                                    }
                                     "SIGNAL_WAIT" => {
                                         let ticket_count = room.ticket_owners.iter().filter(|r| r.value() == &my_username).count();
 
@@ -266,26 +265,23 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                     }).to_string());
                                             }
                                         }
-                                    },
+                                    }
                                     "SET_PRICE" => {
                                         let current_host = room.current_host.lock().unwrap().clone();
                                         if current_host.as_ref() == Some(&my_username) {
                                             let new_price = data["price"].as_i64().unwrap_or(0);
-                                            if !room.ticket_owners.is_empty() { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Không đổi giá khi đã bán vé!" }).to_string().into())).await; }
-                                            else {
+                                            if !room.ticket_owners.is_empty() { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Không đổi giá khi đã bán vé!" }).to_string().into())).await; } else {
                                                 *room.ticket_price.lock().unwrap() = new_price;
                                                 let msg = format!("Host đổi giá vé: {}đ", new_price);
                                                 room.append_log(msg.clone());
                                                 let _ = state_clone.tx.send(json!({ "type": "PRICE_UPDATED", "room_id": my_room_id, "price": new_price, "message": msg }).to_string());
                                             }
                                         }
-                                    },
+                                    }
                                     "START_AUTO_DRAW" => {
                                         let current_host = room.current_host.lock().unwrap().clone();
                                         if current_host.as_ref() == Some(&my_username) {
-                                            if *room.is_game_over.lock().unwrap() { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Game Over! Reset đi." }).to_string().into())).await; }
-                                            else if room.ticket_owners.is_empty() { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Chưa ai mua vé!" }).to_string().into())).await; }
-                                            else {
+                                            if *room.is_game_over.lock().unwrap() { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Game Over! Reset đi." }).to_string().into())).await; } else if room.ticket_owners.is_empty() { let _ = ws_tx_logic.send(Message::Text(json!({ "type": "ERROR", "message": "Chưa ai mua vé!" }).to_string().into())).await; } else {
                                                 let mut violators = HashSet::new();
                                                 for ticket_entry in room.ticket_owners.iter() {
                                                     let owner = ticket_entry.value();
@@ -314,7 +310,10 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
 
                                                     let handle = tokio::spawn(async move {
                                                         loop {
-                                                            if room_thread.ticket_owners.is_empty() { let _ = st_thread.tx.send(json!({ "type": "AUTO_DRAW_STOPPED", "room_id": rid_thread, "message": "Hết vé!" }).to_string()); break; }
+                                                            if room_thread.ticket_owners.is_empty() {
+                                                                let _ = st_thread.tx.send(json!({ "type": "AUTO_DRAW_STOPPED", "room_id": rid_thread, "message": "Hết vé!" }).to_string());
+                                                                break;
+                                                            }
                                                             tokio::time::sleep(Duration::from_secs(interval_sec)).await;
 
                                                             let new_num;
@@ -372,7 +371,7 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                 }
                                             }
                                         }
-                                    },
+                                    }
                                     "STOP_AUTO_DRAW" => {
                                         let current_host = room.current_host.lock().unwrap().clone();
                                         if current_host.as_ref() == Some(&my_username) {
@@ -384,7 +383,7 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                 let _ = state_clone.tx.send(json!({ "type": "AUTO_DRAW_STOPPED", "room_id": my_room_id, "message": msg }).to_string());
                                             }
                                         }
-                                    },
+                                    }
                                     "RESET" => {
                                         let current_host = room.current_host.lock().unwrap().clone();
                                         if current_host.as_ref() == Some(&my_username) {
@@ -401,7 +400,7 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                 let _ = state_clone.tx.send(json!({ "type": "GAME_RESET", "room_id": my_room_id, "message": msg }).to_string());
                                             }
                                         }
-                                    },
+                                    }
                                     "TRANSFER_HOST" => {
                                         let current_host = room.current_host.lock().unwrap().clone();
                                         if current_host.as_ref() == Some(&my_username) {
@@ -419,7 +418,7 @@ pub async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
                                                 }
                                             }
                                         }
-                                    },
+                                    }
                                     _ => {}
                                 }
                             }

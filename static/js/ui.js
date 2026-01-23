@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import {state} from './state.js';
 import * as Actions from './actions.js';
 
 export function log(text) {
@@ -167,16 +167,26 @@ export function updateWaitLeaderboard() {
 export function addStatusLog(username, statusText, type) {
     const area = document.getElementById('win-status-area');
     if (!area) return;
-    while (area.children.length >= 5) { area.removeChild(area.lastChild); }
+    while (area.children.length >= 5) {
+        area.removeChild(area.lastChild);
+    }
     const div = document.createElement('div');
     div.className = `status-card st-${type}`;
-    const time = new Date().toLocaleTimeString('vi-VN', { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const time = new Date().toLocaleTimeString('vi-VN', {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    });
     div.innerHTML = `<span><span style="text-transform:uppercase">${username}</span>: <span>${statusText}</span></span><span class="st-time">${time}</span>`;
     area.prepend(div);
     if (type === 'checking') {
         setTimeout(() => {
-            div.style.transition = "opacity 0.5s ease"; div.style.opacity = "0";
-            setTimeout(() => { if (div.parentNode) div.remove(); }, 500);
+            div.style.transition = "opacity 0.5s ease";
+            div.style.opacity = "0";
+            setTimeout(() => {
+                if (div.parentNode) div.remove();
+            }, 500);
         }, 1000);
     }
 }
@@ -201,7 +211,10 @@ export function updateTicketStatus(ticketId, owner) {
     if (poolThumb) {
         poolThumb.classList.remove('taken', 'selected');
         const l = poolThumb.querySelector('.owner-name');
-        if (l) { l.innerText = ""; l.style.display = 'none'; }
+        if (l) {
+            l.innerText = "";
+            l.style.display = 'none';
+        }
     }
 
     if (owner === state.currentUser) {
@@ -219,7 +232,10 @@ export function updateTicketStatus(ticketId, owner) {
         if (owner && poolThumb) {
             poolThumb.classList.add('taken');
             const l = poolThumb.querySelector('.owner-name');
-            if (l) { l.innerText = owner; l.style.display = 'block'; }
+            if (l) {
+                l.innerText = owner;
+                l.style.display = 'block';
+            }
         }
     }
     const countEl = document.getElementById('ticket-count');
@@ -281,10 +297,18 @@ export function updateConfirmedUI(status) {
     const btn = document.querySelector('#confirm-section button');
     const returnBtns = document.querySelectorAll('.btn-return-ticket');
     if (status) {
-        if (btn) { btn.innerHTML = "🔒 ĐÃ CHỐT"; btn.className = "btn btn-disabled"; btn.onclick = null; }
+        if (btn) {
+            btn.innerHTML = "🔒 ĐÃ CHỐT";
+            btn.className = "btn btn-disabled";
+            btn.onclick = null;
+        }
         returnBtns.forEach(b => b.style.display = 'none');
     } else {
-        if (btn) { btn.innerHTML = "✅ XÁC NHẬN"; btn.className = "btn btn-success"; btn.onclick = Actions.confirmSelection; }
+        if (btn) {
+            btn.innerHTML = "✅ XÁC NHẬN";
+            btn.className = "btn btn-success";
+            btn.onclick = Actions.confirmSelection;
+        }
         returnBtns.forEach(b => b.style.display = 'inline');
     }
     toggleViewMode();
@@ -297,11 +321,17 @@ export function toggleViewMode() {
     if (!pool || !conf || !btnWait) return;
 
     if (state.myTicketIds.length === 0) {
-        pool.classList.remove('hidden'); conf.classList.add('hidden'); btnWait.classList.add('hidden');
+        pool.classList.remove('hidden');
+        conf.classList.add('hidden');
+        btnWait.classList.add('hidden');
     } else if (!state.isConfirmed) {
-        pool.classList.remove('hidden'); conf.classList.remove('hidden'); btnWait.classList.add('hidden');
+        pool.classList.remove('hidden');
+        conf.classList.remove('hidden');
+        btnWait.classList.add('hidden');
     } else {
-        pool.classList.add('hidden'); conf.classList.remove('hidden'); btnWait.classList.remove('hidden');
+        pool.classList.add('hidden');
+        conf.classList.remove('hidden');
+        btnWait.classList.remove('hidden');
     }
 }
 
@@ -332,10 +362,10 @@ export function handleAutoModeToggle(isChecked) {
     const label = document.getElementById('mode-label');
 
     if (state.isAutoMode) {
-        if(label) label.innerText = "Auto (Tự tô)";
+        if (label) label.innerText = "Auto (Tự tô)";
         label.style.color = "#27ae60";
     } else {
-        if(label) label.innerText = "Manual (Tự chọn)";
+        if (label) label.innerText = "Manual (Tự chọn)";
         label.style.color = "#7f8c8d";
     }
 
@@ -378,30 +408,33 @@ export function softResetGame() {
     state.isConfirmed = false;
     state.ticketOwners = {};
     const myContainer = document.getElementById('my-tickets-container');
-    if(myContainer) myContainer.innerHTML = "";
+    if (myContainer) myContainer.innerHTML = "";
     updateConfirmedUI(false);
     document.querySelectorAll('.ticket-thumb').forEach(t => {
         t.classList.remove('taken', 'selected');
         const l = t.querySelector('.owner-name');
-        if (l) { l.innerText = ""; l.style.display = 'none'; }
+        if (l) {
+            l.innerText = "";
+            l.style.display = 'none';
+        }
     });
     initMasterBoard();
 
     const statDrawn = document.getElementById('stat-drawn');
     const statRemain = document.getElementById('stat-remain');
-    if(statDrawn) statDrawn.innerText = "0";
-    if(statRemain) statRemain.innerText = "90";
+    if (statDrawn) statDrawn.innerText = "0";
+    if (statRemain) statRemain.innerText = "90";
 
     const curBall = document.getElementById('current-ball');
-    if(curBall) curBall.innerText = "--";
+    if (curBall) curBall.innerText = "--";
 
     const hist = document.getElementById('recent-history-list');
-    if(hist) hist.innerText = "...";
+    if (hist) hist.innerText = "...";
 
     state.waitingMap = {};
     updateWaitLeaderboard();
     const winArea = document.getElementById('win-status-area');
-    if(winArea) winArea.innerHTML = "";
+    if (winArea) winArea.innerHTML = "";
 
     setGameDisabled(false);
     updateEconomicUI(state.currentTicketPrice, 0);
@@ -409,5 +442,7 @@ export function softResetGame() {
 
 // Code load giọng đọc (để ở global scope)
 if ('speechSynthesis' in window) {
-    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
 }

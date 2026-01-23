@@ -46,9 +46,20 @@
             display: inline-block;
         }
 
-        .btn-print { background: #ffeb3b; color: #000; }
-        .btn-png { background: #2196F3; color: white; }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #000; }
+        .btn-print {
+            background: #ffeb3b;
+            color: #000;
+        }
+
+        .btn-png {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #000;
+        }
 
         .container {
             display: flex;
@@ -65,7 +76,7 @@
             border: 3px solid #000;
             padding: 10px;
             position: relative;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             margin-bottom: 20px;
             display: flex;
             flex-direction: column;
@@ -152,8 +163,11 @@
         #loading-overlay {
             display: none;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
             color: white;
             z-index: 9999;
             text-align: center;
@@ -165,9 +179,20 @@
 
         /* PRINT MODE */
         @media print {
-            body { background: #fff; padding: 0; }
-            .control-panel { display: none !important; }
-            .container { display: block; margin-top: 0; }
+            body {
+                background: #fff;
+                padding: 0;
+            }
+
+            .control-panel {
+                display: none !important;
+            }
+
+            .container {
+                display: block;
+                margin-top: 0;
+            }
+
             .loto-ticket {
                 box-shadow: none;
                 margin: 0 auto 20px auto;
@@ -179,59 +204,59 @@
 </head>
 <body>
 
-    <div id="loading-overlay">
-        ĐANG XỬ LÝ ẢNH... VUI LÒNG CHỜ<br>
-        <span id="progress-text" style="font-size: 18px; color: #ffeb3b;">Đang chuẩn bị...</span>
-    </div>
+<div id="loading-overlay">
+    ĐANG XỬ LÝ ẢNH... VUI LÒNG CHỜ<br>
+    <span id="progress-text" style="font-size: 18px; color: #ffeb3b;">Đang chuẩn bị...</span>
+</div>
 
-    <div class="control-panel no-print">
-        <button class="btn btn-print" onclick="window.print()">🖨️ IN RA GIẤY / PDF</button>
-        <button class="btn btn-png" onclick="downloadAllImages()">💾 TẢI ẢNH PNG (ZIP)</button>
-    </div>
+<div class="control-panel no-print">
+    <button class="btn btn-print" onclick="window.print()">🖨️ IN RA GIẤY / PDF</button>
+    <button class="btn btn-png" onclick="downloadAllImages()">💾 TẢI ẢNH PNG (ZIP)</button>
+</div>
 
-    <div class="container" id="print-area"></div>
+<div class="container" id="print-area"></div>
 
-    <script src="data.js"></script>
+<script src="data.js"></script>
 
-    <script>
-        const printArea = document.getElementById('print-area');
+<script>
+    const printArea = document.getElementById('print-area');
 
-        // Hàm helper để tạo HTML cho 1 phần (section) gồm 3 dòng
-        function createTableSection(rows, themeColor) {
-            let html = '<table class="loto-section">';
-            rows.forEach(row => {
-                html += '<tr>';
-                row.forEach(cell => {
-                    const style = cell === null ? `style="background-color: ${themeColor} !important; -webkit-print-color-adjust: exact;"` : '';
-                    html += `<td ${style}>${cell || ''}</td>`;
-                });
-                html += '</tr>';
+    // Hàm helper để tạo HTML cho 1 phần (section) gồm 3 dòng
+    function createTableSection(rows, themeColor) {
+        let html = '<table class="loto-section">';
+        rows.forEach(row => {
+            html += '<tr>';
+            row.forEach(cell => {
+                const style = cell === null ? `style="background-color: ${themeColor} !important; -webkit-print-color-adjust: exact;"` : '';
+                html += `<td ${style}>${cell || ''}</td>`;
             });
-            html += '</table>';
-            return html;
-        }
+            html += '</tr>';
+        });
+        html += '</table>';
+        return html;
+    }
 
-        // Hàm render vé
-        function renderTicket(ticket) {
-            const card = document.createElement('div');
-            card.className = 'loto-ticket';
-            card.setAttribute('data-id', ticket.id);
+    // Hàm render vé
+    function renderTicket(ticket) {
+        const card = document.createElement('div');
+        card.className = 'loto-ticket';
+        card.setAttribute('data-id', ticket.id);
 
-            const themeColor = ticket.color || "#FFEB3B";
+        const themeColor = ticket.color || "#FFEB3B";
 
-            // Chia 9 dòng thành 3 phần: [0-2], [3-5], [6-8]
-            const part1 = ticket.rows.slice(0, 3);
-            const part2 = ticket.rows.slice(3, 6);
-            const part3 = ticket.rows.slice(6, 9);
+        // Chia 9 dòng thành 3 phần: [0-2], [3-5], [6-8]
+        const part1 = ticket.rows.slice(0, 3);
+        const part2 = ticket.rows.slice(3, 6);
+        const part3 = ticket.rows.slice(6, 9);
 
-            // Dải phân cách
-            const separatorHtml = `
+        // Dải phân cách
+        const separatorHtml = `
                 <div class="separator">
                     <span class="brand-text"><span style="color: gold;">★</span>MADE by BEMOON<span style="color: gold;">★</span> </span>
                 </div>
             `;
 
-            card.innerHTML = `
+        card.innerHTML = `
                 <div class="ticket-header" style="color: ${themeColor}">LÔ TÔ XUÂN</div>
 
                 ${createTableSection(part1, themeColor)}
@@ -249,57 +274,57 @@
                     <span class="ticket-id">ID: ${ticket.id}</span>
                 </div>
             `;
-            printArea.appendChild(card);
+        printArea.appendChild(card);
+    }
+
+    // Chạy lệnh render
+    if (typeof ticketData !== 'undefined') {
+        ticketData.forEach(t => renderTicket(t));
+    } else {
+        document.body.innerHTML += '<h2 style="color:white; text-align:center; margin-top:50px;">LỖI: Không tìm thấy file data.js! Hãy đảm bảo file data.js nằm cùng thư mục.</h2>';
+    }
+
+    // Hàm tải ảnh (Giữ nguyên logic cũ)
+    async function downloadAllImages() {
+        const tickets = document.querySelectorAll('.loto-ticket');
+        if (tickets.length === 0) {
+            alert("Không có vé nào để tải!");
+            return;
         }
 
-        // Chạy lệnh render
-        if (typeof ticketData !== 'undefined') {
-            ticketData.forEach(t => renderTicket(t));
-        } else {
-            document.body.innerHTML += '<h2 style="color:white; text-align:center; margin-top:50px;">LỖI: Không tìm thấy file data.js! Hãy đảm bảo file data.js nằm cùng thư mục.</h2>';
-        }
+        const loading = document.getElementById('loading-overlay');
+        const progress = document.getElementById('progress-text');
+        loading.style.display = 'block';
 
-        // Hàm tải ảnh (Giữ nguyên logic cũ)
-        async function downloadAllImages() {
-            const tickets = document.querySelectorAll('.loto-ticket');
-            if (tickets.length === 0) {
-                alert("Không có vé nào để tải!");
-                return;
+        const zip = new JSZip();
+
+        await new Promise(r => setTimeout(r, 100));
+
+        for (let i = 0; i < tickets.length; i++) {
+            const ticket = tickets[i];
+            const id = ticket.getAttribute('data-id') || `ve_${i + 1}`;
+            progress.innerText = `Đang chụp vé ID: ${id} (${i + 1}/${tickets.length})`;
+
+            try {
+                const canvas = await html2canvas(ticket, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: "#ffffff",
+                    logging: false
+                });
+                const imgData = canvas.toDataURL("image/png").split(',')[1];
+                zip.file(`ticket-${id}.png`, imgData, {base64: true});
+            } catch (e) {
+                console.error("Lỗi khi chụp vé " + id, e);
             }
-
-            const loading = document.getElementById('loading-overlay');
-            const progress = document.getElementById('progress-text');
-            loading.style.display = 'block';
-
-            const zip = new JSZip();
-
-            await new Promise(r => setTimeout(r, 100));
-
-            for (let i = 0; i < tickets.length; i++) {
-                const ticket = tickets[i];
-                const id = ticket.getAttribute('data-id') || `ve_${i+1}`;
-                progress.innerText = `Đang chụp vé ID: ${id} (${i+1}/${tickets.length})`;
-
-                try {
-                    const canvas = await html2canvas(ticket, {
-                        scale: 2,
-                        useCORS: true,
-                        backgroundColor: "#ffffff",
-                        logging: false
-                    });
-                    const imgData = canvas.toDataURL("image/png").split(',')[1];
-                    zip.file(`ticket-${id}.png`, imgData, {base64: true});
-                } catch (e) {
-                    console.error("Lỗi khi chụp vé " + id, e);
-                }
-            }
-
-            progress.innerText = "Đang nén file ZIP... Vui lòng chờ!";
-            zip.generateAsync({type:"blob"}).then(function(content) {
-                saveAs(content, "Danh_Sach_Ve_Loto_Bemoon.zip");
-                loading.style.display = 'none';
-            });
         }
-    </script>
+
+        progress.innerText = "Đang nén file ZIP... Vui lòng chờ!";
+        zip.generateAsync({type: "blob"}).then(function (content) {
+            saveAs(content, "Danh_Sach_Ve_Loto_Bemoon.zip");
+            loading.style.display = 'none';
+        });
+    }
+</script>
 </body>
 </html>

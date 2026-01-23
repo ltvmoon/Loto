@@ -2,24 +2,27 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Loto Việt Nam Online</title>
-    <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="css/style.css">
+    <link href="data:," rel="icon">
+    <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
 <div id="app">
     <div id="login-screen">
         <h1 style="color: #2c3e50; font-size: 2.5em; margin-bottom: 20px;">ĐĂNG NHẬP</h1>
         <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center;">
-            <label for="username"></label><input type="text" id="username" placeholder="Tên đăng nhập" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px;">
-            <label for="password"></label><input type="password" id="password" placeholder="Mật khẩu" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px;">
+            <label for="username"></label><input id="username" placeholder="Tên đăng nhập" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px;"
+                                                 type="text">
+            <label for="password"></label><input id="password" placeholder="Mật khẩu" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px;"
+                                                 type="password">
             <button class="btn btn-primary" onclick="login()" style="width: 100%;">ĐĂNG NHẬP</button>
-            <p style="margin-top: 15px; color: #7f8c8d; font-size: 0.9em;">Hệ thống nội bộ. Liên hệ Admin để cấp tài khoản.</p>
+            <p style="margin-top: 15px; color: #7f8c8d; font-size: 0.9em;">Hệ thống nội bộ. Liên hệ Admin để cấp tài
+                khoản.</p>
         </div>
     </div>
 
-    <div id="admin-dashboard" class="hidden container-center">
+    <div class="hidden container-center" id="admin-dashboard">
         <h1>QUẢN TRỊ VIÊN</h1>
         <h3 id="welcome-admin" style="color: #34495e;">Xin chào, Admin</h3>
         <div style="display: flex; gap: 20px; margin-top: 30px;">
@@ -34,10 +37,10 @@
                 <p>Tạo tài khoản, xem số dư</p>
             </div>
         </div>
-        <button class="btn btn-stop" style="margin-top: 30px;" onclick="logout()">Đăng Xuất</button>
+        <button class="btn btn-stop" onclick="logout()" style="margin-top: 30px;">Đăng Xuất</button>
     </div>
 
-    <div id="admin-user-manager" class="hidden container-center" style="justify-content: start; padding-top: 50px;">
+    <div class="hidden container-center" id="admin-user-manager" style="justify-content: start; padding-top: 50px;">
         <div style="width: 100%; max-width: 800px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <button class="btn btn-reset" onclick="navToAdminDashboard()">⬅ Quay lại Dashboard</button>
@@ -47,15 +50,20 @@
             <div class="panel" style="margin-bottom: 20px; background: #e3f2fd; border: 1px solid #90caf9;">
                 <h3 style="margin-top: 0;">Thêm User Mới</h3>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <label for="new-username"></label><input type="text" id="new-username" placeholder="Username" style="padding: 10px; flex: 1; border-radius: 4px; border: 1px solid #ccc;">
-                    <label for="new-password"></label><input type="text" id="new-password" placeholder="Password" style="padding: 10px; flex: 1; border-radius: 4px; border: 1px solid #ccc;">
+                    <label for="new-username"></label><input id="new-username" placeholder="Username" style="padding: 10px; flex: 1; border-radius: 4px; border: 1px solid #ccc;"
+                                                             type="text">
+                    <label for="new-password"></label><input id="new-password" placeholder="Password" style="padding: 10px; flex: 1; border-radius: 4px; border: 1px solid #ccc;"
+                                                             type="text">
 
-                    <label for="new-initial-balance"></label><input type="number" id="new-initial-balance" placeholder="Số dư ban đầu (VD: 0)" style="padding: 10px; flex: 1; border-radius: 4px; border: 1px solid #ccc;">
+                    <label for="new-initial-balance"></label><input id="new-initial-balance" placeholder="Số dư ban đầu (VD: 0)"
+                                                                    style="padding: 10px; flex: 1; border-radius: 4px; border: 1px solid #ccc;"
+                                                                    type="number">
 
-                    <label for="new-role"></label><select id="new-role" style="padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                    </select>
+                    <label for="new-role"></label><select id="new-role"
+                                                          style="padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
                     <button class="btn btn-success" onclick="createNewUser()">Tạo Ngay</button>
                 </div>
             </div>
@@ -69,7 +77,9 @@
                             <th style="padding: 10px; position: sticky; top: 0; background: #eee;">User</th>
                             <th style="padding: 10px; position: sticky; top: 0; background: #eee;">Role</th>
                             <th style="padding: 10px; position: sticky; top: 0; background: #eee;">Số dư</th>
-                            <th style="padding: 10px; position: sticky; top: 0; background: #eee; text-align: center;">Thao tác</th>
+                            <th style="padding: 10px; position: sticky; top: 0; background: #eee; text-align: center;">
+                                Thao tác
+                            </th>
                         </tr>
                         </thead>
                         <tbody id="user-list-body">
@@ -80,15 +90,20 @@
         </div>
     </div>
 
-    <div id="edit-user-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="hidden" id="edit-user-modal"
+         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
         <div style="background: white; padding: 20px; border-radius: 8px; width: 300px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
             <h3 style="margin-top: 0;">Sửa User: <span id="edit-target-username" style="color: #3498db;"></span></h3>
 
             <label style="font-weight: bold; font-size: 0.9em;">Mật khẩu mới (Để trống nếu không đổi):</label>
-            <label for="edit-new-password"></label><input type="text" id="edit-new-password" placeholder="Nhập pass mới..." style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <label for="edit-new-password"></label><input id="edit-new-password" placeholder="Nhập pass mới..."
+                                                          style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;"
+                                                          type="text">
 
             <label style="font-weight: bold; font-size: 0.9em;">Số dư mới:</label>
-            <label for="edit-new-balance"></label><input type="number" id="edit-new-balance" placeholder="Nhập số tiền..." style="width: 100%; padding: 8px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 4px;">
+            <label for="edit-new-balance"></label><input id="edit-new-balance" placeholder="Nhập số tiền..."
+                                                         style="width: 100%; padding: 8px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 4px;"
+                                                         type="number">
 
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button class="btn btn-reset" onclick="closeEditModal()">Hủy</button>
@@ -97,13 +112,15 @@
         </div>
     </div>
 
-    <div id="lobby-screen" class="hidden container-center">
+    <div class="hidden container-center" id="lobby-screen">
         <div style="width: 100%; max-width: 600px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0; color: #2c3e50;">SẢNH CHỜ</h2>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-weight: bold;">👤 <span id="lobby-username">...</span></span>
-                    <button class="btn btn-reset" onclick="handleLobbyBack()" style="padding: 5px 10px; font-size: 0.9em;">Thoát</button>
+                    <button class="btn btn-reset" onclick="handleLobbyBack()"
+                            style="padding: 5px 10px; font-size: 0.9em;">Thoát
+                    </button>
                 </div>
             </div>
 
@@ -119,11 +136,13 @@
         </div>
     </div>
 
-    <div id="game-grid" class="hidden">
+    <div class="hidden" id="game-grid">
         <div class="col-left">
             <div class="panel user-info-card">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <button onclick="leaveRoom()" class="btn btn-reset" style="padding: 5px 10px; font-size: 0.8em;">⬅ Rời phòng</button>
+                    <button class="btn btn-reset" onclick="leaveRoom()" style="padding: 5px 10px; font-size: 0.8em;">⬅
+                        Rời phòng
+                    </button>
                     <span style="font-weight: bold; color: #7f8c8d;">Phòng: <span id="display-room-id">...</span></span>
                 </div>
 
@@ -133,7 +152,8 @@
 
                 <div class="game-info-stats">
                     <div class="stat-item"><span>GIÁ VÉ</span><strong id="current-price-display">0</strong></div>
-                    <div class="stat-item"><span>HŨ</span><strong id="current-pot-display" style="color:#c0392b;">0</strong></div>
+                    <div class="stat-item"><span>HŨ</span><strong id="current-pot-display"
+                                                                  style="color:#c0392b;">0</strong></div>
                 </div>
             </div>
             <div class="panel">
@@ -147,58 +167,108 @@
         </div>
 
         <div class="col-center">
-            <div id="host-panel" class="panel hidden">
+            <div class="panel hidden" id="host-panel">
                 <h3 style="color: white; border-bottom-color: rgba(255,255,255,0.3);">👑 Host Control</h3>
-                <div class="host-controls" style="border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 10px;">
-                    <label for="host-price-input">💲 Giá:</label> <input type="number" id="host-price-input" class="input-price" value="0" step="1000"> <button class="btn btn-price" onclick="setPrice()">ĐẶT</button>
+                <div class="host-controls"
+                     style="border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 10px;">
+                    <label for="host-price-input">💲 Giá:</label> <input class="input-price" id="host-price-input"
+                                                                        step="1000" type="number" value="0">
+                    <button class="btn btn-price" onclick="setPrice()">ĐẶT</button>
                 </div>
-                <div class="host-controls" style="border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 10px;">
+                <div class="host-controls"
+                     style="border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 10px;">
                     <label>⏩ Chuyển Host:</label>
-                    <label for="transfer-target"></label><select id="transfer-target" class="input-transfer" style="width: 120px; padding: 5px;"><option value="">-- Chọn --</option></select>
-                    <button class="btn btn-reset" style="padding: 5px;" onclick="transferHost()">OK</button>
+                    <label for="transfer-target"></label><select class="input-transfer" id="transfer-target"
+                                                                 style="width: 120px; padding: 5px;">
+                    <option value="">-- Chọn --</option>
+                </select>
+                    <button class="btn btn-reset" onclick="transferHost()" style="padding: 5px;">OK</button>
                 </div>
                 <div class="host-controls">
                     <div id="draw-controls-wrapper">
-                        <label for="auto-interval">⏱️ Giây:</label> <input type="number" id="auto-interval" class="input-secs" value="3" min="1" max="10">
-                        <button id="btn-auto-draw" class="btn btn-draw" onclick="toggleAutoDraw()">▶ QUAY</button>
+                        <label for="auto-interval">⏱️ Giây:</label> <input class="input-secs" id="auto-interval"
+                                                                           max="10" min="1" type="number"
+                                                                           value="3">
+                        <button class="btn btn-draw" id="btn-auto-draw" onclick="toggleAutoDraw()">▶ QUAY</button>
                     </div>
-                    <button id="btn-reset-game" class="btn btn-reset" onclick="if(confirm('Reset ván?')) hostAction('RESET')">VÁN MỚI 🔄</button>
+                    <button class="btn btn-reset" id="btn-reset-game"
+                            onclick="if(confirm('Reset ván?')) hostAction('RESET')">VÁN MỚI 🔄
+                    </button>
                 </div>
             </div>
-            <div id="my-tickets-dashboard" class="panel">
+            <div class="panel" id="my-tickets-dashboard">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; margin-bottom: 10px;">
                     <h3 style="border:none; margin:0; padding:0;">🎫 Vé Của Bạn (<span id="ticket-count">0</span>/2)</h3>
 
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span id="mode-label" style="font-size: 0.9em; font-weight: bold; color: #7f8c8d;">Manual (Tự chọn)</span>
-                        <label class="switch" style="position: relative; display: inline-block; width: 50px; height: 24px;">
-                            <input type="checkbox" id="auto-mode-toggle" onclick="toggleAutoMode(this)">
-                            <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+                        <label class="switch"
+                               style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                            <input id="auto-mode-toggle" onclick="toggleAutoMode(this)" type="checkbox">
+                            <span class="slider round"
+                                  style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
                             <style>
-                                .switch input { opacity: 0; width: 0; height: 0; }
-                                .slider.round:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-                                input:checked + .slider { background-color: #2196F3; }
-                                input:checked + .slider:before { transform: translateX(26px); }
+                                .switch input {
+                                    opacity: 0;
+                                    width: 0;
+                                    height: 0;
+                                }
+
+                                .slider.round:before {
+                                    position: absolute;
+                                    content: "";
+                                    height: 16px;
+                                    width: 16px;
+                                    left: 4px;
+                                    bottom: 4px;
+                                    background-color: white;
+                                    transition: .4s;
+                                    border-radius: 50%;
+                                }
+
+                                input:checked + .slider {
+                                    background-color: #2196F3;
+                                }
+
+                                input:checked + .slider:before {
+                                    transform: translateX(26px);
+                                }
                             </style>
                         </label>
                     </div>
                 </div>
 
-                <div id="my-tickets-container" class="my-ticket-wrapper"></div>
-                <div id="confirm-section" class="hidden" style="margin-top: 15px;"><button class="btn btn-success" onclick="confirmSelection()">✅ XÁC NHẬN CHỐT VÉ</button></div>
+                <div class="my-ticket-wrapper" id="my-tickets-container"></div>
+                <div class="hidden" id="confirm-section" style="margin-top: 15px;">
+                    <button class="btn btn-success" onclick="confirmSelection()">✅ XÁC NHẬN CHỐT VÉ</button>
+                </div>
             </div>
-            <div id="pool-area" class="panel"><h3>Chọn Vé</h3><div id="pool-grid"></div></div>
+            <div class="panel" id="pool-area"><h3>Chọn Vé</h3>
+                <div id="pool-grid"></div>
+            </div>
             <button class="btn btn-wait hidden" id="btn-wait" onclick="signalWait()">✋ BÁO CHỜ</button>
         </div>
 
         <div class="col-right">
-            <div class="panel" id="current-ball-wrapper"><h4>SỐ VỪA KÊU</h4><span id="current-ball">--</span><div id="recent-history-list">...</div></div>
-            <div class="panel"><h3>Tiến Trình</h3><div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span>Đã gọi: <span id="stat-drawn">0</span></span><span>Còn: <span id="stat-remain">90</span></span></div><div id="master-grid"></div></div>
-            <div class="panel"><h3>📢 Thông Báo</h3><div id="wait-leaderboard"><div style="color:#aaa;text-align:center;">Trống</div></div><hr><div id="win-status-area"></div></div>
+            <div class="panel" id="current-ball-wrapper"><h4>SỐ VỪA KÊU</h4><span id="current-ball">--</span>
+                <div id="recent-history-list">...</div>
+            </div>
+            <div class="panel"><h3>Tiến Trình</h3>
+                <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span>Đã gọi: <span
+                        id="stat-drawn">0</span></span><span>Còn: <span id="stat-remain">90</span></span></div>
+                <div id="master-grid"></div>
+            </div>
+            <div class="panel"><h3>📢 Thông Báo</h3>
+                <div id="wait-leaderboard">
+                    <div style="color:#aaa;text-align:center;">Trống</div>
+                </div>
+                <hr>
+                <div id="win-status-area"></div>
+            </div>
         </div>
     </div>
 </div>
 
-<script type="module" src="js/main.js"></script>
+<script src="js/main.js" type="module"></script>
 </body>
 </html>

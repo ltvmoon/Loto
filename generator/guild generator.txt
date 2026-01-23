@@ -1,0 +1,8 @@
+Nếu bạn không quen sử dụng python có thể sử dụng generator cho đỡ phức tạp.
+trực tiếp : generator.html
+
+Nếu bạn muốn nhìn chuyên nghiệp + an toàn ( không có vấn đề về vi 1 cột chỉ có 2 3 số - không đủ tiêu chuẩn)
+run main.py
+check bằng index.html
+tải tickets.json vào dữ liệu
+copy hình ảnh và static/images

@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import {state} from './state.js';
 import * as UI from './ui.js';
 
 /**
@@ -31,7 +31,7 @@ export function connectWS() {
     state.ws = new WebSocket(`${proto}://${window.location.host}/ws`);
 
     state.ws.onopen = () => {
-        state.ws.send(JSON.stringify({ cmd: "JOIN", username: state.currentUser, room_id: state.currentRoomId }));
+        state.ws.send(JSON.stringify({cmd: "JOIN", username: state.currentUser, room_id: state.currentRoomId}));
     };
 
     state.ws.onmessage = (event) => {
@@ -61,57 +61,50 @@ export function connectWS() {
             UI.updateUserListUI();
             UI.setGameDisabled(msg.is_game_over);
             UI.updateEconomicUI(msg.ticket_price, Object.keys(msg.owners).length);
-        }
-        else if (msg.type === 'USER_JOINED') {
+        } else if (msg.type === 'USER_JOINED') {
             if (msg.username === state.currentUser) return;
 
             if (!state.onlineUsers.includes(msg.username)) state.onlineUsers.push(msg.username);
             UI.updateUserListUI();
             UI.log(msg.message);
-        }
-        else if (msg.type === 'USER_LEFT') {
+        } else if (msg.type === 'USER_LEFT') {
             const idx = state.onlineUsers.indexOf(msg.username);
             if (idx > -1) state.onlineUsers.splice(idx, 1);
-            for (const [tid, owner] of Object.entries(state.ticketOwners)) { if (owner === msg.username) delete state.ticketOwners[tid]; }
+            for (const [tid, owner] of Object.entries(state.ticketOwners)) {
+                if (owner === msg.username) delete state.ticketOwners[tid];
+            }
             UI.updateUserListUI();
             UI.log(`🚪 ${msg.username} đã thoát.`);
-        }
-        else if (msg.type === 'HOST_CHANGED') {
+        } else if (msg.type === 'HOST_CHANGED') {
             state.currentHost = msg.username;
             UI.checkHostStatus(msg.username);
             UI.updateUserListUI();
             if (msg.message) UI.log(msg.message);
-        }
-        else if (msg.type === 'TICKET_TAKEN') {
+        } else if (msg.type === 'TICKET_TAKEN') {
             state.ticketOwners[msg.ticket_id] = msg.owner;
             UI.updateTicketStatus(msg.ticket_id, msg.owner);
             state.totalSoldTickets++;
             UI.updateEconomicUI(state.currentTicketPrice, state.totalSoldTickets);
             UI.updateUserListUI();
-        }
-        else if (msg.type === 'TICKET_FREED') {
+        } else if (msg.type === 'TICKET_FREED') {
             delete state.ticketOwners[msg.ticket_id];
             UI.updateTicketStatus(msg.ticket_id, null);
             state.totalSoldTickets--;
             UI.updateEconomicUI(state.currentTicketPrice, state.totalSoldTickets);
             UI.updateUserListUI();
-        }
-        else if (msg.type === 'ERROR') alert("❌ " + msg.message);
+        } else if (msg.type === 'ERROR') alert("❌ " + msg.message);
         else if (msg.type === 'USER_CONFIRMED') {
             if (msg.username === state.currentUser) UI.updateConfirmedUI(true);
             UI.log(msg.message);
-        }
-        else if (msg.type === 'NEW_NUMBER') {
+        } else if (msg.type === 'NEW_NUMBER') {
             UI.updateDisplay(msg.value, msg.history);
             UI.speakNumber(msg.value);
             UI.highlightMyNumbers(msg.value);
-        }
-        else if (msg.type === 'USER_WAITING') {
+        } else if (msg.type === 'USER_WAITING') {
             state.waitingMap[msg.username] = msg.count;
             UI.updateWaitLeaderboard();
             UI.addStatusLog(msg.username, `ĐANG CHỜ (${msg.count} hàng)`, "checking");
-        }
-        else if (msg.type === 'WINNER') {
+        } else if (msg.type === 'WINNER') {
             UI.updateAutoDrawUI(false);
             // --- CẬP NHẬT MỚI: XÓA BẢNG CHỜ ---
             state.waitingMap = {}; // Xóa dữ liệu chờ trong bộ nhớ
@@ -121,8 +114,7 @@ export function connectWS() {
             alert("Chiến thắng: " + msg.message);
             UI.setGameDisabled(true);
             UI.log(msg.message);
-        }
-        else if (msg.type === 'AUTO_DRAW_STARTED') {
+        } else if (msg.type === 'AUTO_DRAW_STARTED') {
             state.hasGameStartedOnce = true; // QUAN TRỌNG: Xác nhận game đã chạy thành công
             UI.updateAutoDrawUI(true);
             UI.log(msg.message);
@@ -130,23 +122,19 @@ export function connectWS() {
                 state.currentInterval = msg.interval;
             }
             UI.updateUserListUI();
-        }
-        else if (msg.type === 'AUTO_DRAW_STOPPED') {
+        } else if (msg.type === 'AUTO_DRAW_STOPPED') {
             UI.updateAutoDrawUI(false);
             UI.log(msg.message);
-        }
-        else if (msg.type === 'GAME_RESET') {
+        } else if (msg.type === 'GAME_RESET') {
             alert(msg.message);
             UI.softResetGame();
             UI.log(msg.message);
             UI.updateUserListUI();
-        }
-        else if (msg.type === 'BALANCE_UPDATE') {
+        } else if (msg.type === 'BALANCE_UPDATE') {
             if (msg.username === state.currentUser) {
                 document.getElementById('display-balance').innerText = new Intl.NumberFormat('vi-VN').format(msg.balance);
             }
-        }
-        else if (msg.type === 'PRICE_UPDATED') {
+        } else if (msg.type === 'PRICE_UPDATED') {
             UI.updateEconomicUI(msg.price, state.totalSoldTickets);
             UI.log(msg.message);
         }

@@ -5,7 +5,9 @@
 ![Database](https://img.shields.io/badge/Database-SQLite-lightgrey?style=for-the-badge&logo=sqlite)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-Một hệ thống game Loto truyền thống Việt Nam trực tuyến, hỗ trợ nhiều người chơi cùng lúc (Multiplayer) với tốc độ phản hồi thời gian thực (Real-time). Dự án được xây dựng với hiệu năng cao sử dụng **Rust** cho Backend và **Vanilla JavaScript** cho Frontend.
+Một hệ thống game Loto truyền thống Việt Nam trực tuyến, hỗ trợ nhiều người chơi cùng lúc (Multiplayer) với tốc độ phản
+hồi thời gian thực (Real-time). Dự án được xây dựng với hiệu năng cao sử dụng **Rust** cho Backend và **Vanilla
+JavaScript** cho Frontend.
 
 ---
 
@@ -86,9 +88,9 @@ Sử dụng tài khoản Admin mặc định (được cấu hình trong `.env` 
 2. **Host (Chủ phòng):** Vào sảnh, tạo phòng mới, đặt giá vé
 3. **Người chơi:** Đăng nhập, chọn phòng tại sảnh chờ
 4. **Trong phòng:**
-   - Người chơi chọn vé
-   - Bấm "Xác nhận chốt vé"
-   - Host bấm "Quay Số" (Có thể chọn quay tự động)
+    - Người chơi chọn vé
+    - Bấm "Xác nhận chốt vé"
+    - Host bấm "Quay Số" (Có thể chọn quay tự động)
 5. **Kết thúc:** Hệ thống tự động phát hiện người trúng (Kinh!), cộng tiền thưởng và thông báo người thắng cuộc
 
 ---
@@ -121,16 +123,16 @@ loto-app/
 
 ## 🛡️ Công Nghệ Sử Dụng
 
-| Thành phần | Công nghệ |
-|------------|-----------|
-| Language | Rust 🦀 |
-| Framework | Axum 0.8 |
-| Runtime | Tokio |
-| WebSocket | Axum WS / Futures |
-| Database | Rusqlite (SQLite) |
-| Security | Bcrypt, Dotenvy |
-| Frontend | Vanilla JS, CSS3, HTML5 |
-| AI Assistant | Claude (Anthropic) 🤖 |
+| Thành phần   | Công nghệ               |
+|--------------|-------------------------|
+| Language     | Rust 🦀                 |
+| Framework    | Axum 0.8                |
+| Runtime      | Tokio                   |
+| WebSocket    | Axum WS / Futures       |
+| Database     | Rusqlite (SQLite)       |
+| Security     | Bcrypt, Dotenvy         |
+| Frontend     | Vanilla JS, CSS3, HTML5 |
+| AI Assistant | Claude (Anthropic) 🤖   |
 
 ---
 
@@ -143,7 +145,8 @@ Dự án này được phát triển với sự hỗ trợ của **Claude AI** t
 - 🐛 Debug và tối ưu hóa hiệu năng
 - 📝 Viết documentation và comments
 
-> Việc sử dụng AI trong phát triển phần mềm giúp tăng tốc quá trình code, đồng thời đảm bảo chất lượng và best practices.
+> Việc sử dụng AI trong phát triển phần mềm giúp tăng tốc quá trình code, đồng thời đảm bảo chất lượng và best
+> practices.
 
 ---
 

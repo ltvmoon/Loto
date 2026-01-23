@@ -1,8 +1,8 @@
 import json
-import random
 import numpy as np
-import sys
+import random
 import re
+import sys
 
 # ==========================================
 # CẤU HÌNH

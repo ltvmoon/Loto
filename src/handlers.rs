@@ -1,19 +1,20 @@
 use axum::{
     extract::{ws::WebSocketUpgrade, State},
+    http::StatusCode,
     response::{IntoResponse, Response},
     Json,
-    http::StatusCode,
 };
+use rusqlite::{params, Connection};
 use std::sync::Arc;
-use rusqlite::{params, Connection}; // Bắt buộc có params
-use bcrypt::{hash, verify};
-use crate::ws::handle_socket;
 // Nhớ thêm DeleteUserRequest vào đây (và phải khai báo trong model.rs)
-use crate::model::{AppState, LoginRequest, CreateUserRequest, UpdateUserRequest, DeleteUserRequest, Ticket, RoomSummary, UserData};
+use crate::model::{AppState, CreateUserRequest, DeleteUserRequest, LoginRequest, RoomSummary, Ticket, UpdateUserRequest, UserData};
+use crate::ws::handle_socket;
+// Bắt buộc có params
+use bcrypt::{hash, verify};
 
 pub async fn login_handler(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<LoginRequest>
+    Json(payload): Json<LoginRequest>,
 ) -> Response {
     let conn = Connection::open(&state.db_path).unwrap();
 
@@ -25,7 +26,7 @@ pub async fn login_handler(
             let role: String = row.get(1)?;
             let balance: i64 = row.get(2)?;
             Ok((hash, role, balance))
-        }
+        },
     );
 
     match result {
@@ -40,7 +41,7 @@ pub async fn login_handler(
             } else {
                 (StatusCode::UNAUTHORIZED, Json(serde_json::json!({ "status": "error", "message": "Sai mật khẩu!" }))).into_response()
             }
-        },
+        }
         Err(_) => {
             (StatusCode::UNAUTHORIZED, Json(serde_json::json!({ "status": "error", "message": "Tài khoản không tồn tại!" }))).into_response()
         }
@@ -49,14 +50,14 @@ pub async fn login_handler(
 
 pub async fn create_user_handler(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<CreateUserRequest>
+    Json(payload): Json<CreateUserRequest>,
 ) -> Response {
     let conn = Connection::open(&state.db_path).unwrap();
 
     let creator_role: String = conn.query_row(
         "SELECT role FROM users WHERE username = ?1",
         params![payload.creator],
-        |row| row.get(0)
+        |row| row.get(0),
     ).unwrap_or("user".to_string());
 
     if creator_role != "admin" {
@@ -80,14 +81,14 @@ pub async fn create_user_handler(
 
 pub async fn update_user_handler(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<UpdateUserRequest>
+    Json(payload): Json<UpdateUserRequest>,
 ) -> Response {
     let conn = Connection::open(&state.db_path).unwrap();
 
     let admin_role: String = conn.query_row(
         "SELECT role FROM users WHERE username = ?1",
         params![payload.admin_username],
-        |row| row.get(0)
+        |row| row.get(0),
     ).unwrap_or("user".to_string());
 
     if admin_role != "admin" {
@@ -120,14 +121,14 @@ pub async fn update_user_handler(
 // MỚI: API XÓA USER
 pub async fn delete_user_handler(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<DeleteUserRequest>
+    Json(payload): Json<DeleteUserRequest>,
 ) -> Response {
     let conn = Connection::open(&state.db_path).unwrap();
 
     let admin_role: String = conn.query_row(
         "SELECT role FROM users WHERE username = ?1",
         params![payload.admin_username],
-        |row| row.get(0)
+        |row| row.get(0),
     ).unwrap_or("user".to_string());
 
     if admin_role != "admin" {
@@ -152,7 +153,7 @@ pub async fn delete_user_handler(
             } else {
                 (StatusCode::NOT_FOUND, Json(serde_json::json!({ "status": "error", "message": "User không tồn tại!" }))).into_response()
             }
-        },
+        }
         Err(e) => {
             println!("❌ Lỗi Delete: {:?}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({ "status": "error", "message": "Lỗi Database" }))).into_response()
@@ -194,7 +195,7 @@ pub async fn get_rooms_handler(State(state): State<Arc<AppState>>) -> Json<Vec<R
         rooms.push(RoomSummary {
             id: room.id.clone(),
             count: room.users.len(),
-            host: room.current_host.lock().unwrap().clone()
+            host: room.current_host.lock().unwrap().clone(),
         });
     }
     rooms.sort_by(|a, b| a.id.cmp(&b.id));

@@ -1,8 +1,8 @@
+use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use dashmap::DashMap;
-use tokio::task::JoinHandle;
 use tokio::sync::broadcast;
+use tokio::task::JoinHandle;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Ticket {

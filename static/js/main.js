@@ -35,7 +35,7 @@ window.hostAction = Actions.hostAction;
 window.toggleAutoDraw = Actions.toggleAutoDraw;
 window.toggleAutoMode = Actions.toggleAutoMode;
 
-window.onload = function() {
+window.onload = function () {
     Actions.checkSession();
     setInterval(() => {
         const lobby = document.getElementById('lobby-screen');

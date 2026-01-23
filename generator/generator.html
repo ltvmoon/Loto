@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hệ Thống In Vé Loto - BEMOON Style</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        body {
+            background: #555;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        /* CONTROL PANEL */
+        .control-panel {
+            text-align: center;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: #444;
+            border-bottom: 2px solid #fff;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #000;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid #000;
+            border-radius: 8px;
+            box-shadow: 0 4px 0 #000;
+            text-transform: uppercase;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.1s;
+            white-space: nowrap;
+        }
+
+        .btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #000;
+        }
+
+        .btn:disabled {
+            background: #999;
+            color: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .btn-gen { background: #4CAF50; color: white; }
+        .btn-print { background: #ffeb3b; color: #000; }
+        .btn-png { background: #2196F3; color: white; }
+        .btn-json { background: #9C27B0; color: white; } /* Màu tím cho nút JSON */
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* TICKET STYLES (BEMOON STYLE) */
+        .loto-ticket {
+            width: 500px;
+            background: #fff;
+            border: 3px solid #000;
+            padding: 10px;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ticket-header {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 5px;
+            font-family: "Arial Black", Arial, sans-serif;
+            text-transform: uppercase;
+        }
+
+        .loto-section {
+            width: 100%;
+            border-collapse: collapse;
+            border: 3px solid #000;
+            table-layout: fixed;
+        }
+
+        .loto-section td {
+            border: 2px solid #000;
+            height: 70px;
+            text-align: center;
+            vertical-align: middle;
+            padding: 0;
+            line-height: 1;
+            font-family: "Impact", "Arial Narrow", sans-serif;
+            font-size: 45px;
+            color: #000;
+            width: 50px;
+            overflow: hidden;
+        }
+
+        .separator {
+            height: 15px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border-left: 3px solid #000;
+            border-right: 3px solid #000;
+            margin-top: -2px;
+            margin-bottom: -2px;
+            z-index: 10;
+        }
+
+        .brand-text {
+            font-family: "Arial", sans-serif;
+            font-size: 10px;
+            font-weight: 900;
+            color: #000;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: #fff;
+            padding: 0 10px;
+        }
+
+        .ticket-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-family: Arial, sans-serif;
+        }
+
+        .ticket-id {
+            background: #000;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 4px;
+        }
+
+        /* LOADING OVERLAY */
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            z-index: 9999;
+            text-align: center;
+            padding-top: 20%;
+        }
+
+        /* PRINT MODE */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .control-panel { display: none !important; }
+            .container { display: block; margin-top: 0; }
+            .loto-ticket {
+                box-shadow: none;
+                margin: 0 auto 20px auto;
+                border: 3px solid #000;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading-overlay">
+    <h2 id="loading-title">ĐANG XỬ LÝ</h2>
+    <p id="progress-text" style="font-size: 18px; color: #ffeb3b;">Vui lòng chờ...</p>
+</div>
+
+<div class="control-panel no-print">
+    <div class="input-group">
+        <label for="numPairs">Số CẶP vé:</label>
+        <input type="number" id="numPairs" value="8" min="1" max="200">
+    </div>
+
+    <button class="btn btn-gen" onclick="generateAndRender()">✨ 1. SINH VÉ & XEM</button>
+    <button class="btn btn-print" onclick="window.print()" id="btnPrint" disabled>🖨️ 2. IN / PDF</button>
+    <button class="btn btn-png" onclick="downloadAllImages()" id="btnDown" disabled>💾 3. TẢI ẢNH ZIP</button>
+    <button class="btn btn-json" onclick="downloadJSON()" id="btnJson" disabled>📄 4. TẢI JSON</button>
+</div>
+
+<div class="container" id="print-area">
+    <div style="color: #ccc; font-size: 20px; margin-top: 50px;">
+        Chưa có vé nào. Nhập số lượng và bấm nút "SINH VÉ & XEM"
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // PHẦN 1: LOGIC SINH VÉ (CORE)
+    // ==========================================
+    const COLORS = [
+        "#E91E63", "#F44336", "#9C27B0", "#673AB7",
+        "#3F51B5", "#2196F3", "#03A9F4", "#00BCD4",
+        "#009688", "#4CAF50", "#8BC34A", "#CDDC39",
+        "#FFEB3B", "#FFC107", "#FF9800", "#FF5722"
+    ];
+
+    let currentTicketData = []; // Dữ liệu quan trọng để xuất JSON
+
+    function range(start, end) {
+        let arr = [];
+        for (let i = start; i < end; i++) arr.push(i);
+        return arr;
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function weightedRandomChoice(items, weights, count) {
+        let chosen = [];
+        let currentItems = [...items];
+        let currentWeights = [...weights];
+        for (let i = 0; i < count; i++) {
+            let totalWeight = currentWeights.reduce((a, b) => a + b, 0);
+            if (totalWeight <= 0) return null;
+            let r = Math.random() * totalWeight;
+            let acc = 0;
+            let selectedIndex = -1;
+            for (let j = 0; j < currentWeights.length; j++) {
+                acc += currentWeights[j];
+                if (r <= acc) { selectedIndex = j; break; }
+            }
+            if (selectedIndex === -1) selectedIndex = currentWeights.length - 1;
+            chosen.push(currentItems[selectedIndex]);
+            currentItems.splice(selectedIndex, 1);
+            currentWeights.splice(selectedIndex, 1);
+        }
+        return chosen;
+    }
+
+    function generateLayout(rowCount, colCount, rowTargetSum, colTargets) {
+        const maxRestarts = 50;
+        for (let attempt = 0; attempt < maxRestarts; attempt++) {
+            let grid = Array.from({ length: rowCount }, () => Array(colCount).fill(0));
+            let currentColCounts = [...colTargets];
+            let success = true;
+            let rowsIndices = shuffleArray(range(0, rowCount));
+
+            for (let r of rowsIndices) {
+                let validCols = [];
+                let weights = [];
+                for (let c = 0; c < colCount; c++) {
+                    if (currentColCounts[c] > 0) {
+                        validCols.push(c);
+                        weights.push(currentColCounts[c]);
+                    }
+                }
+                if (validCols.length < rowTargetSum) { success = false; break; }
+                let chosenCols = weightedRandomChoice(validCols, weights, rowTargetSum);
+                if (!chosenCols) { success = false; break; }
+                chosenCols.forEach(c => { grid[r][c] = 1; currentColCounts[c] -= 1; });
+            }
+            if (success && currentColCounts.every(c => c === 0)) return grid;
+        }
+        return null;
+    }
+
+    function generatePairData(pairStartId, color, usedRowsHashes) {
+        const colTotals = [9, 10, 10, 10, 10, 10, 10, 10, 11];
+        let attempts = 0;
+        while (true) {
+            attempts++;
+            if (attempts > 2000) throw new Error("Thử lại, không tìm được tổ hợp số.");
+
+            let countsA = [], countsB = [], validSplit = false;
+            for (let k = 0; k < 50; k++) {
+                let tempA = [];
+                for (let i = 0; i < colTotals.length; i++) {
+                    let cTot = colTotals[i];
+                    let low = Math.max(1, cTot - 6);
+                    let high = Math.min(cTot - 1, 6);
+                    let choices = [];
+                    for (let x = low; x <= high; x++) {
+                        let weight = (x === 5) ? 10 : 1;
+                        for (let w = 0; w < weight; w++) choices.push(x);
+                    }
+                    tempA.push(choices[Math.floor(Math.random() * choices.length)]);
+                }
+                if (tempA.reduce((a, b) => a + b, 0) === 45) {
+                    countsA = tempA;
+                    countsB = colTotals.map((t, idx) => t - tempA[idx]);
+                    validSplit = true;
+                    break;
+                }
+            }
+            if (!validSplit) continue;
+
+            let gridA = generateLayout(9, 9, 5, countsA); if (!gridA) continue;
+            let gridB = generateLayout(9, 9, 5, countsB); if (!gridB) continue;
+
+            let pools = [], startNum = 1;
+            for (let cTot of colTotals) {
+                let nums = range(startNum, startNum + cTot);
+                shuffleArray(nums);
+                pools.push(nums);
+                startNum += cTot;
+            }
+
+            let valsA = [], valsB = [];
+            for (let i = 0; i < 9; i++) {
+                let n = countsA[i];
+                valsA.push(pools[i].slice(0, n).sort((a, b) => a - b));
+                valsB.push(pools[i].slice(n).sort((a, b) => a - b));
+            }
+
+            function fillRows(grid, colValues) {
+                let rows = [];
+                let cv = colValues.map(arr => [...arr]);
+                for (let r = 0; r < 9; r++) {
+                    let rowData = [];
+                    for (let c = 0; c < 9; c++) {
+                        if (grid[r][c] === 1) rowData.push(cv[c].shift());
+                        else rowData.push(null);
+                    }
+                    rows.push(rowData);
+                }
+                return rows;
+            }
+
+            let rowsA = fillRows(gridA, valsA);
+            let rowsB = fillRows(gridB, valsB);
+
+            let currentHashes = new Set();
+            let overlap = false;
+            let allRows = [...rowsA, ...rowsB];
+            for (let row of allRows) {
+                let h = JSON.stringify(row);
+                if (usedRowsHashes.has(h) || currentHashes.has(h)) { overlap = true; break; }
+                currentHashes.add(h);
+            }
+            if (overlap) continue;
+
+            return {
+                ticketA: { id: pairStartId, color: color, rows: rowsA },
+                ticketB: { id: pairStartId + 1, color: color, rows: rowsB },
+                newHashes: currentHashes
+            };
+        }
+    }
+
+    // ==========================================
+    // PHẦN 2: LOGIC UI & RENDER
+    // ==========================================
+    function generateAndRender() {
+        const numPairs = parseInt(document.getElementById('numPairs').value) || 8;
+        const printArea = document.getElementById('print-area');
+        const overlay = document.getElementById('loading-overlay');
+        const title = document.getElementById('loading-title');
+        const progress = document.getElementById('progress-text');
+
+        printArea.innerHTML = '';
+        currentTicketData = []; // Reset data
+        let globalRowHashes = new Set();
+        let startId = 101;
+
+        overlay.style.display = 'block';
+        title.innerText = 'ĐANG SINH DỮ LIỆU...';
+
+        // Disable buttons
+        ['btnPrint', 'btnDown', 'btnJson'].forEach(id => document.getElementById(id).disabled = true);
+
+        setTimeout(() => {
+            try {
+                for (let i = 0; i < numPairs; i++) {
+                    let color = COLORS[i % COLORS.length];
+                    let result = generatePairData(startId, color, globalRowHashes);
+                    currentTicketData.push(result.ticketA);
+                    currentTicketData.push(result.ticketB);
+                    result.newHashes.forEach(h => globalRowHashes.add(h));
+                    startId += 2;
+                    progress.innerText = `Đã sinh xong cặp ${i+1}/${numPairs}`;
+                }
+
+                title.innerText = 'ĐANG VẼ GIAO DIỆN...';
+                currentTicketData.forEach(ticket => renderTicket(ticket));
+
+                overlay.style.display = 'none';
+                // Enable buttons
+                ['btnPrint', 'btnDown', 'btnJson'].forEach(id => document.getElementById(id).disabled = false);
+
+            } catch (e) {
+                alert("Lỗi: " + e.message);
+                overlay.style.display = 'none';
+            }
+        }, 100);
+    }
+
+    function createTableSection(rows, themeColor) {
+        let html = '<table class="loto-section">';
+        rows.forEach(row => {
+            html += '<tr>';
+            row.forEach(cell => {
+                const style = cell === null ? `style="background-color: ${themeColor} !important; -webkit-print-color-adjust: exact;"` : '';
+                html += `<td ${style}>${cell || ''}</td>`;
+            });
+            html += '</tr>';
+        });
+        html += '</table>';
+        return html;
+    }
+
+    function renderTicket(ticket) {
+        const printArea = document.getElementById('print-area');
+        const card = document.createElement('div');
+        card.className = 'loto-ticket';
+        card.setAttribute('data-id', ticket.id);
+        const themeColor = ticket.color || "#FFEB3B";
+        const part1 = ticket.rows.slice(0, 3);
+        const part2 = ticket.rows.slice(3, 6);
+        const part3 = ticket.rows.slice(6, 9);
+        const separatorHtml = `
+            <div class="separator">
+                <span class="brand-text"><span style="color: ${themeColor};">★</span> BEMOON <span style="color: ${themeColor};">★</span></span>
+            </div>
+        `;
+        card.innerHTML = `
+            <div class="ticket-header" style="color: ${themeColor}">LÔ TÔ XUÂN</div>
+            ${createTableSection(part1, themeColor)}
+            ${separatorHtml}
+            ${createTableSection(part2, themeColor)}
+            ${separatorHtml}
+            ${createTableSection(part3, themeColor)}
+            <div class="ticket-footer" style="color: ${themeColor}">
+                <span>Made by Bemoon</span>
+                <span class="ticket-id">ID: ${ticket.id}</span>
+            </div>
+        `;
+        printArea.appendChild(card);
+    }
+
+    // ==========================================
+    // PHẦN 3: CÁC CHỨC NĂNG XUẤT FILE
+    // ==========================================
+
+    // --- LOGIC XUẤT JSON CHUYÊN NGHIỆP ---
+    function formatProfessionalJSON(data) {
+        // Bước 1: Stringify có indent chuẩn (2 spaces)
+        let jsonStr = JSON.stringify(data, null, 2);
+
+        // Bước 2: Dùng Regex tìm các mảng số trong rows
+        // Pattern: Tìm dấu [ mở, theo sau là dãy (số/null/phẩy), rồi dấu ] đóng
+        // Thay thế: Xóa hết dấu xuống dòng (\n) và khoảng trắng thừa bên trong mảng đó
+        jsonStr = jsonStr.replace(/\[\s*((?:-?\d+|null|,\s*)+)\s*\]/g, (match, content) => {
+            // Xóa hết khoảng trắng hiện tại (bao gồm \n)
+            let compact = content.replace(/\s/g, '');
+            // Thêm lại dấu cách sau dấu phẩy cho đẹp (null, null)
+            compact = compact.replace(/,/g, ', ');
+            return `[${compact}]`;
+        });
+
+        return jsonStr;
+    }
+
+    function downloadJSON() {
+        if (!currentTicketData || currentTicketData.length === 0) return;
+
+        // Format dữ liệu theo đúng yêu cầu
+        const finalJson = formatProfessionalJSON(currentTicketData);
+
+        const blob = new Blob([finalJson], {type: "application/json;charset=utf-8"});
+        saveAs(blob, "tickets.json");
+    }
+    // --------------------------------------
+
+    async function downloadAllImages() {
+        const tickets = document.querySelectorAll('.loto-ticket');
+        if (tickets.length === 0) return;
+        const overlay = document.getElementById('loading-overlay');
+        const title = document.getElementById('loading-title');
+        const progress = document.getElementById('progress-text');
+
+        overlay.style.display = 'block';
+        title.innerText = 'ĐANG CHỤP ẢNH...';
+        const zip = new JSZip();
+        window.scrollTo(0,0);
+        await new Promise(r => setTimeout(r, 200));
+
+        for (let i = 0; i < tickets.length; i++) {
+            const ticket = tickets[i];
+            const id = ticket.getAttribute('data-id');
+            progress.innerText = `Đang xử lý vé ID: ${id} (${i + 1}/${tickets.length})`;
+            try {
+                const canvas = await html2canvas(ticket, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: "#ffffff",
+                    logging: false
+                });
+                const imgData = canvas.toDataURL("image/png").split(',')[1];
+                zip.file(`Ve_Loto_${id}.png`, imgData, {base64: true});
+            } catch (e) {
+                console.error("Lỗi vé " + id, e);
+            }
+        }
+        title.innerText = "ĐANG NÉN FILE ZIP...";
+        progress.innerText = "Vui lòng chờ giây lát...";
+        zip.generateAsync({type: "blob"}).then(function (content) {
+            saveAs(content, "Danh_Sach_Ve_Loto_Bemoon.zip");
+            overlay.style.display = 'none';
+        });
+    }
+</script>
+
+</body>
+</html>

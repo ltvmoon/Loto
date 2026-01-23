@@ -1,5 +1,5 @@
-import { state } from './state.js';
-import { connectWS } from './ws.js';
+import {state} from './state.js';
+import {connectWS} from './ws.js';
 import * as UI from './ui.js';
 
 // --- 1. SESSION & NAV ---
@@ -21,7 +21,7 @@ export function checkSession() {
             if (state.userRole === 'admin') {
                 navToAdminDashboard();
                 const welcome = document.getElementById('welcome-admin');
-                if(welcome) welcome.innerText = `Xin chào, ${state.currentUser}`;
+                if (welcome) welcome.innerText = `Xin chào, ${state.currentUser}`;
             } else {
                 navToLobby();
             }
@@ -51,10 +51,12 @@ function showScreen(screenId) {
         if (el) el.classList.add('hidden');
     });
     const target = document.getElementById(screenId);
-    if(target) target.classList.remove('hidden');
+    if (target) target.classList.remove('hidden');
 }
 
-export function navToAdminDashboard() { showScreen('admin-dashboard'); }
+export function navToAdminDashboard() {
+    showScreen('admin-dashboard');
+}
 
 export function navToUserManager() {
     showScreen('admin-user-manager');
@@ -65,7 +67,7 @@ export function navToUserManager() {
 export function navToLobby() {
     showScreen('lobby-screen');
     const el = document.getElementById('lobby-username');
-    if(el) el.innerText = state.currentUser;
+    if (el) el.innerText = state.currentUser;
     // FIX: "Promise returned is ignored" - Thêm catch lỗi
     refreshRoomList().catch(console.error);
 }
@@ -101,12 +103,12 @@ export async function login(userArg, passArg, roomArg) {
     try {
         const res = await fetch('/api/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password})
         });
         if (!res.ok) {
             const err = await res.text();
-            if(res.status === 422) return alert("Lỗi dữ liệu (422).");
+            if (res.status === 422) return alert("Lỗi dữ liệu (422).");
             return alert("Lỗi: " + err);
         }
         const data = await res.json();
@@ -123,18 +125,21 @@ export async function login(userArg, passArg, roomArg) {
 
             if (typeof roomArg === 'string') connectWS();
         }
-    } catch (e) { alert("Lỗi kết nối!"); console.error(e); }
+    } catch (e) {
+        alert("Lỗi kết nối!");
+        console.error(e);
+    }
 }
 
 // --- 3. ADMIN MANAGER ---
 export async function loadUserList() {
     const tbody = document.getElementById('user-list-body');
-    if(!tbody) return;
+    if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Đang tải...</td></tr>';
 
     try {
         const res = await fetch('/api/admin/users');
-        if(res.ok) {
+        if (res.ok) {
             const users = await res.json();
             tbody.innerHTML = "";
             users.forEach(u => {
@@ -147,7 +152,7 @@ export async function loadUserList() {
                     <tr>
                         <td style="padding:10px; font-weight:bold;">${u.username}</td>
                         <td style="padding:10px;">
-                            <span style="background:${u.role==='admin'?'#ffeeba':'#e8f8f5'}; padding:3px 8px; border-radius:10px; font-size:0.9em;">
+                            <span style="background:${u.role === 'admin' ? '#ffeeba' : '#e8f8f5'}; padding:3px 8px; border-radius:10px; font-size:0.9em;">
                                 ${u.role.toUpperCase()}
                             </span>
                         </td>
@@ -162,7 +167,9 @@ export async function loadUserList() {
                 `;
             });
         }
-    } catch(e) { tbody.innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">Lỗi tải!</td></tr>'; }
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:red; text-align:center;">Lỗi tải!</td></tr>';
+    }
 }
 
 export async function deleteUser(targetUser) {
@@ -171,8 +178,8 @@ export async function deleteUser(targetUser) {
     try {
         const res = await fetch('/api/admin/delete_user', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ target_username: targetUser, admin_username: state.currentUser })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({target_username: targetUser, admin_username: state.currentUser})
         });
         const data = await res.json();
         if (data.status === 'ok') {
@@ -181,7 +188,10 @@ export async function deleteUser(targetUser) {
         } else {
             alert("❌ Lỗi: " + data.message);
         }
-    } catch (e) { alert("Lỗi kết nối!"); console.error(e); }
+    } catch (e) {
+        alert("Lỗi kết nối!");
+        console.error(e);
+    }
 }
 
 export function openEditModal(username, currentBalance) {
@@ -221,7 +231,7 @@ export async function submitEditUser() {
     try {
         const res = await fetch('/api/admin/update_user', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -232,7 +242,9 @@ export async function submitEditUser() {
         } else {
             alert("❌ " + data.message);
         }
-    } catch (e) { alert("Lỗi kết nối!"); }
+    } catch (e) {
+        alert("Lỗi kết nối!");
+    }
 }
 
 export async function createNewUser() {
@@ -247,7 +259,7 @@ export async function createNewUser() {
     try {
         const res = await fetch('/api/admin/create_user', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 username: u, password: p, role: r, balance: bal, creator: state.currentUser
             })
@@ -262,7 +274,9 @@ export async function createNewUser() {
         } else {
             alert("❌ " + data.message);
         }
-    } catch(e) { alert("Lỗi kết nối!"); }
+    } catch (e) {
+        alert("Lỗi kết nối!");
+    }
 }
 
 // --- 4. ROOM & GAME ---
@@ -274,21 +288,29 @@ export async function refreshRoomList() {
         if (!res.ok) return;
         const rooms = await res.json();
         state.availableRooms = rooms;
-        if (rooms.length === 0) { container.innerHTML = '<div style="text-align:center;padding:20px;">Chưa có phòng nào.</div>'; return; }
+        if (rooms.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:20px;">Chưa có phòng nào.</div>';
+            return;
+        }
         container.innerHTML = "";
         rooms.forEach(room => {
             const div = document.createElement('div');
             const isFull = room.count >= 16;
             div.className = `room-item ${isFull ? 'full' : ''}`;
-            div.onclick = () => { if (!isFull) joinRoom(room.id); };
+            div.onclick = () => {
+                if (!isFull) joinRoom(room.id);
+            };
             div.innerHTML = `<div><span class="room-id">🚪 ${room.id}</span> <span style="font-size:0.8em">Host: ${room.host || '-'}</span></div><div class="room-count">👤 ${room.count}/16</div>`;
             container.appendChild(div);
         });
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 export function createRandomRoom() {
-    let newId; let attempts = 0;
+    let newId;
+    let attempts = 0;
     do {
         newId = Math.floor(Math.random() * 900) + 100;
         attempts++;
@@ -321,7 +343,7 @@ async function fetchAndInitTickets() {
     const res = await fetch('/api/tickets');
     const tickets = await res.json();
     const poolGrid = document.getElementById('pool-grid');
-    if(!poolGrid) return;
+    if (!poolGrid) return;
     poolGrid.innerHTML = "";
     state.ticketDataMap = {};
 
@@ -343,7 +365,7 @@ async function fetchAndInitTickets() {
         img.alt = `Vé ${ticket.id}`;
 
         // Xử lý sự kiện lỗi ảnh bằng hàm (Clean Code)
-        img.onerror = function() {
+        img.onerror = function () {
             this.style.display = 'none';       // Ẩn ảnh lỗi
             fallbackDiv.style.display = 'block'; // Hiện số vé thay thế
         };
@@ -379,33 +401,60 @@ export function selectTicket(ticketId) {
     if (state.isConfirmed) return alert("Đã chốt vé!");
     if (state.myTicketIds.length >= 2) return alert("Max 2 vé!");
     if (state.myTicketIds.includes(ticketId)) return;
-    state.ws.send(JSON.stringify({ cmd: "SELECT_TICKET", ticket_id: ticketId, username: state.currentUser, room_id: state.currentRoomId }));
+    state.ws.send(JSON.stringify({
+        cmd: "SELECT_TICKET",
+        ticket_id: ticketId,
+        username: state.currentUser,
+        room_id: state.currentRoomId
+    }));
 }
+
 export function unselectTicket(event, ticketId) {
     if (event) event.stopPropagation();
     if (state.isConfirmed) return alert("Đã chốt vé!");
-    state.ws.send(JSON.stringify({ cmd: "UNSELECT_TICKET", ticket_id: ticketId, username: state.currentUser, room_id: state.currentRoomId }));
+    state.ws.send(JSON.stringify({
+        cmd: "UNSELECT_TICKET",
+        ticket_id: ticketId,
+        username: state.currentUser,
+        room_id: state.currentRoomId
+    }));
 }
+
 export function confirmSelection() {
     if (state.myTicketIds.length === 0) return alert("Chọn vé đi!");
-    state.ws.send(JSON.stringify({ cmd: "CONFIRM_TICKET", username: state.currentUser, room_id: state.currentRoomId }));
+    state.ws.send(JSON.stringify({cmd: "CONFIRM_TICKET", username: state.currentUser, room_id: state.currentRoomId}));
     state.isConfirmed = true;
     UI.toggleViewMode();
 }
+
 export function setPrice() {
     const p = document.getElementById('host-price-input').value;
-    state.ws.send(JSON.stringify({ cmd: "SET_PRICE", price: parseInt(p), username: state.currentUser, room_id: state.currentRoomId }));
+    state.ws.send(JSON.stringify({
+        cmd: "SET_PRICE",
+        price: parseInt(p),
+        username: state.currentUser,
+        room_id: state.currentRoomId
+    }));
 }
+
 export function transferHost() {
     const target = document.getElementById('transfer-target').value;
-    if (target) state.ws.send(JSON.stringify({ cmd: "TRANSFER_HOST", target: target, username: state.currentUser, room_id: state.currentRoomId }));
+    if (target) state.ws.send(JSON.stringify({
+        cmd: "TRANSFER_HOST",
+        target: target,
+        username: state.currentUser,
+        room_id: state.currentRoomId
+    }));
 }
+
 export function hostAction(action) {
-    state.ws.send(JSON.stringify({ cmd: action, username: state.currentUser, room_id: state.currentRoomId }));
+    state.ws.send(JSON.stringify({cmd: action, username: state.currentUser, room_id: state.currentRoomId}));
 }
+
 export function signalWait() {
-    state.ws.send(JSON.stringify({ cmd: "SIGNAL_WAIT", username: state.currentUser, room_id: state.currentRoomId }));
+    state.ws.send(JSON.stringify({cmd: "SIGNAL_WAIT", username: state.currentUser, room_id: state.currentRoomId}));
 }
+
 export function toggleAutoDraw() {
     const intervalInput = document.getElementById('auto-interval');
     if (!state.isAutoDrawing) {
@@ -417,9 +466,18 @@ export function toggleAutoDraw() {
             if (!confirm(msg)) return;
         }
         const secs = parseInt(intervalInput.value) || 3;
-        state.ws.send(JSON.stringify({ cmd: "START_AUTO_DRAW", interval: secs, username: state.currentUser, room_id: state.currentRoomId }));
+        state.ws.send(JSON.stringify({
+            cmd: "START_AUTO_DRAW",
+            interval: secs,
+            username: state.currentUser,
+            room_id: state.currentRoomId
+        }));
     } else {
-        state.ws.send(JSON.stringify({ cmd: "STOP_AUTO_DRAW", username: state.currentUser, room_id: state.currentRoomId }));
+        state.ws.send(JSON.stringify({
+            cmd: "STOP_AUTO_DRAW",
+            username: state.currentUser,
+            room_id: state.currentRoomId
+        }));
     }
 }
 

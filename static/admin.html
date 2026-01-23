@@ -2,23 +2,86 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Loto Host Control</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #2c3e50; color: white; }
-        .control-panel { max-width: 600px; margin: 0 auto; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 10px; }
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 20px;
+            background: #2c3e50;
+            color: white;
+        }
 
-        #current-number { font-size: 8em; font-weight: bold; color: #f1c40f; margin: 20px 0; min-height: 150px; text-shadow: 4px 4px 0 #000; }
+        .control-panel {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+        }
 
-        .btn { padding: 15px 30px; font-size: 1.5em; border: none; border-radius: 8px; cursor: pointer; margin: 10px; font-weight: bold; }
-        .btn-draw { background: #27ae60; color: white; box-shadow: 0 5px 0 #1e8449; }
-        .btn-draw:active { transform: translateY(5px); box-shadow: none; }
+        #current-number {
+            font-size: 8em;
+            font-weight: bold;
+            color: #f1c40f;
+            margin: 20px 0;
+            min-height: 150px;
+            text-shadow: 4px 4px 0 #000;
+        }
 
-        .btn-reset { background: #c0392b; color: white; font-size: 1em; }
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-weight: bold;
+        }
 
-        #history { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 20px; }
-        .ball { width: 30px; height: 30px; background: #ecf0f1; color: #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .ball.recent { background: #f1c40f; transform: scale(1.1); border: 2px solid white; }
+        .btn-draw {
+            background: #27ae60;
+            color: white;
+            box-shadow: 0 5px 0 #1e8449;
+        }
+
+        .btn-draw:active {
+            transform: translateY(5px);
+            box-shadow: none;
+        }
+
+        .btn-reset {
+            background: #c0392b;
+            color: white;
+            font-size: 1em;
+        }
+
+        #history {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .ball {
+            width: 30px;
+            height: 30px;
+            background: #ecf0f1;
+            color: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .ball.recent {
+            background: #f1c40f;
+            transform: scale(1.1);
+            border: 2px solid white;
+        }
     </style>
 </head>
 <body>
@@ -42,7 +105,7 @@
 
     ws.onopen = () => {
         console.log("Admin Connected");
-        ws.send(JSON.stringify({ cmd: "JOIN", username: "ADMIN_HOST" }));
+        ws.send(JSON.stringify({cmd: "JOIN", username: "ADMIN_HOST"}));
     };
 
     ws.onmessage = (event) => {
@@ -52,7 +115,7 @@
             updateUI(msg.value, msg.history);
         } else if (msg.type === 'SYNC_STATE') {
             // Khi admin F5 lại trang, load lại trạng thái cũ
-            if(msg.numbers.length > 0) {
+            if (msg.numbers.length > 0) {
                 updateUI(msg.numbers[msg.numbers.length - 1], msg.numbers);
             }
         } else if (msg.type === 'GAME_RESET') {
@@ -65,12 +128,12 @@
     };
 
     function drawNumber() {
-        ws.send(JSON.stringify({ cmd: "DRAW" }));
+        ws.send(JSON.stringify({cmd: "DRAW"}));
     }
 
     function resetGame() {
-        if(confirm("Bạn muốn xóa hết lịch sử để chơi ván mới?")) {
-            ws.send(JSON.stringify({ cmd: "RESET" }));
+        if (confirm("Bạn muốn xóa hết lịch sử để chơi ván mới?")) {
+            ws.send(JSON.stringify({cmd: "RESET"}));
         }
     }
 
