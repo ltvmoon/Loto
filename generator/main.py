@@ -194,7 +194,7 @@ def main():
     json_content = get_compact_json_str(all_tickets)
 
     # 1. Lưu file .json thuần túy
-    json_filename = 'tickets.json'
+    json_filename = '../tickets.json'
     with open(json_filename, 'w', encoding='utf-8') as f:
         f.write(json_content)
     print(f"[OK] Đã tạo file: {json_filename}")
